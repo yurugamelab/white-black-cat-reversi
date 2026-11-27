@@ -866,6 +866,7 @@ function directorScore(cat, d, g, base, side) {
   return sc;
 }
 function canWander(cat) {
+  if (isCorner(cat.r, cat.c)) return false; // 角の猫は動かない
   if (cat.lure && cat.lure.steps > 0 && S.time < cat.lure.until) return true;
   if (S.mode === 'play') {
     if (isCorner(cat.r, cat.c)) return false;
@@ -879,6 +880,7 @@ function freeDests(cat) {
   for (const [dr, dc] of DIRS) {
     const r = cat.r + dr, c = cat.c + dc;
     if (!inB(r, c) || cell[r][c] || resv[r][c]) continue;
+    if (isCorner(r, c)) continue; // 角は置いて取るもの。歩いては入らない
     if (dr && dc && crossing(cat.r, cat.c, r, c)) continue;
     opts.push({ r, c });
   }
@@ -892,7 +894,7 @@ function softPick(opts, scores) {
 function rescue(side) {
   const g = gridNow(); const cands = [], scores = [];
   for (const cat of S.cats) {
-    if (cat.mode !== 'idle') continue;
+    if (cat.mode !== 'idle' || isCorner(cat.r, cat.c)) continue;
     for (const d of freeDests(cat)) {
       const after = movesOn(gridAfterWalk(g, cat, d), side, cat); if (!after) continue;
       cands.push({ cat, d }); scores.push(after * 0.5 - (isCorner(cat.r, cat.c) ? 3 : 0) - ((cat.restUntil || 0) > S.turnNo ? 1 : 0));
@@ -904,13 +906,7 @@ function rescue(side) {
   return true;
 }
 function pickDest(cat) {
-  const opts = [];
-  for (const [dr, dc] of DIRS) {
-    const r = cat.r + dr, c = cat.c + dc;
-    if (!inB(r, c) || cell[r][c] || resv[r][c]) continue;
-    if (dr && dc && crossing(cat.r, cat.c, r, c)) continue;
-    opts.push({ r, c });
-  }
+  const opts = freeDests(cat);
   if (!opts.length) return null;
   if (cat.lure && cat.lure.steps > 0 && S.time < cat.lure.until) {
     const L = cat.lure; let best = null, bd = Math.hypot(cat.r - L.r, cat.c - L.c) - 0.01;
@@ -1054,7 +1050,7 @@ function useToy(color, r, c) {
   const toy = { owner: color, r, c, t: TOY_DUR, obj: makeToyObj(), time: 0 }; toy.obj.visible = true; S.toys.push(toy);
   let n = 0;
   for (const cat of S.cats) {
-    if (cat.color === color || cat.mode === 'hidden' || cat.sleeping) continue;
+    if (cat.color === color || cat.mode === 'hidden' || cat.sleeping || isCorner(cat.r, cat.c)) continue;
     if (Math.max(Math.abs(cat.r - r), Math.abs(cat.c - c)) <= TOY_RADIUS) {
       cat.lure = { r, c, steps: TOY_STEPS, until: S.time + TOY_DUR, toy }; n++;
       if (cat.mode === 'idle') { cat.nextWalk = S.time + rnd(0.05, 0.35); cat.busyUntil = Math.min(cat.busyUntil, S.time); }
