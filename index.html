@@ -123,6 +123,16 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
 @keyframes cnt{0%{transform:translate(-50%,-50%) scale(1.5);opacity:0}25%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-50%) scale(.9);opacity:.35}}
 @keyframes ban{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}20%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}35%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-60%) scale(1)}}
 
+#revealBox{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 120px);transform:translateX(-50%);display:flex;align-items:center;gap:14px;z-index:13;pointer-events:none}
+#revealBox .rv{display:flex;flex-direction:column;align-items:center;min-width:110px;padding:10px 14px 8px;border-radius:24px;background:#fff;box-shadow:var(--shadow)}
+#revealBox .rv.b{background:#4a4452;color:#fff;box-shadow:0 6px 0 rgba(40,30,60,.35),0 12px 24px rgba(60,40,80,.25)}
+#revealBox .rv b{font-size:64px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums}
+#revealBox .rv span{font-size:13px;font-weight:800;opacity:.8}
+#revealBox i{font-style:normal;font-size:40px;font-weight:900;color:var(--ink-s)}
+#revealBox b.bump{animation:bump .25s}
+#revealBox .rv.winner{animation:winpop .6s ease-out forwards}
+#revealBox .rv.loser{opacity:.45;transform:scale(.9);transition:all .4s}
+@keyframes winpop{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1.18);box-shadow:0 0 0 5px #ffd36e,0 0 30px rgba(255,200,80,.8)}}
 /* pause / result */
 #pauseMenu{z-index:30;background:rgba(255,236,244,.7);backdrop-filter:blur(4px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;pointer-events:auto}
 #pauseMenu h2{margin:0 0 6px;font-size:28px;font-weight:900}
@@ -196,7 +206,7 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
       <div class="slide">
         <h3>③ 猫じゃらしで誘導</h3>
         <div class="mini" style="grid-template-columns:repeat(4,44px)"><i class="w"></i><i></i><i class="toy"></i><i class="b"></i></div>
-        <p>空いているマスを<b>長押し</b>すると猫じゃらし！<br>近くの<b>相手の猫</b>が寄ってくるよ。<br>手番を使わず、<b>3回</b>まで。<br>猫を長押しするとなでられるよ。</p>
+        <p>空いているマスを<b>長押し</b>すると猫じゃらし！<br>近くの<b>相手の猫</b>が寄ってくるよ。<br>手番を使わず、<b>何回でも</b>使えるよ。<br>猫を長押しするとなでられるよ。</p>
       </div>
     </div>
     <div class="dots"><i></i><i></i><i></i></div>
@@ -210,7 +220,7 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
       <div class="sb" id="sbB"><em class="you hidden" id="youB">あなた</em><span id="scB">2</span><svg viewBox="0 0 40 40"><path d="M6 14 L8 3 L17 9 Q20 8 23 9 L32 3 L34 14 Q38 22 32 31 Q26 37 20 37 Q14 37 8 31 Q2 22 6 14Z" fill="#4a4452" stroke="#2f2a36" stroke-width="2"/><circle cx="14" cy="21" r="2.2" fill="#ffe08a"/><circle cx="26" cy="21" r="2.2" fill="#ffe08a"/><path d="M18 26 Q20 28 22 26" stroke="#ff9fb8" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg></div>
     </div>
     <div class="hudBtns"><button class="round" id="pauseBtn">⏸</button><button class="round soundBtn">🔊</button></div>
-    <div class="bottom"><div id="hint"></div><div id="toyBtn" aria-label="猫じゃらしの残り回数">🪶<span id="toyCount">×3</span></div></div>
+    <div class="bottom"><div id="hint"></div></div>
   </div>
 
   <div id="result" class="layer hidden">
@@ -240,6 +250,7 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
     <button class="btn ghost" id="pauseTitle">タイトルへ</button>
   </div>
 
+  <div id="revealBox" class="hidden"><div class="rv w"><b id="rvW">0</b><span>白ねこ</span></div><i>：</i><div class="rv b"><b id="rvB">0</b><span>黒ねこ</span></div></div>
   <div id="toast"></div>
   <div id="banner"></div>
   <div id="bigCount"></div>
@@ -378,6 +389,8 @@ const Snd = (() => {
     lose() { [440, 392, 349, 294].forEach((f, i) => tone('sine', f, f * 0.98, 0.3, 0.3, i * 0.18)); },
     draw() { [523, 523, 659].forEach((f, i) => tone('triangle', f, f, 0.2, 0.25, i * 0.15)); },
     ui() { tone('triangle', 740, 740, 0.07, 0.22); },
+    count(i, col) { const f = 440 * Math.pow(2, Math.min(i, 30) / 24) * (col === 1 ? 1 : 0.84); tone('triangle', f, f * 1.02, 0.09, 0.22); },
+    drum() { for (let i = 0; i < 10; i++) noise(0.06, 0.12 + i * 0.02, 180, 0.8, i * 0.07, 'lowpass'); tone('sine', 110, 60, 0.4, 0.5, 0.75); },
   };
 
   // ---- BGM: ゆったりウクレレ風 ----
@@ -523,13 +536,13 @@ const APP_URL = ''; // アプリ版ストアURL（公開後に設定）
 const FOLLOW_URL = 'https://x.com/Yurugamelab';
 const GAME_URL = 'https://yurugamelab.github.io/white-black-cat-reversi/';
 const TURN_TIME = 10;        // 1手の制限時間（秒）
-const TOY_MAX = 3;           // 猫じゃらしの回数
 const TOY_DUR = 4.5;         // 猫じゃらしが出ている時間
 const TOY_RADIUS = 2;        // 誘導できる距離（マス）
 const TOY_STEPS = 3;
 const CAT_SCALE = 2.0;
 const CAT_YAW = 0;
 const HALF = N / 2;
+const HIDE_AT = 16;          // 猫がこの数を超えたら、点数は「？」にして最後まで内緒
 const CAT_NAME = { 1: '白ねこ', 2: '黒ねこ' };
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -550,7 +563,7 @@ const S = {
   time: 0, paused: false, moveEnabled: false, attract: false,
   me: WHITE, cpu: BLACK, turn: WHITE, timeLeft: TURN_TIME, cpuAt: 0, cpuToyAt: -1, gapT: 0, nextTurn: WHITE, passes: 0, endT: 0, noMoveT: 0, turnNo: 0, rescueWait: false, rescueTries: 0,
   sel: null, toyMode: false, toyDrag: null, toyHover: null, kb: false, cursor: { r: 2, c: 2 },
-  toyLeft: { 1: TOY_MAX, 2: TOY_MAX }, toyCool: { 1: 0, 2: 0 }, toys: [],
+  toyCool: { 1: 0, 2: 0 }, toys: [],
   cats: [], pool: [], events: [], previewCats: [], valid: [], validT: 0,
   yaw: 0, pitch: 0, camDist: 14, camIdle: 0,
   reserve: { top: 200, bottom: 200 }, reserveTo: { top: 200, bottom: 200 },
@@ -1005,6 +1018,7 @@ function updateCat(cat, dt) {
       if (u >= 1) { cat.flip = null; setCatColor(cat, cat.color); }
     }
   }
+  if (cat.bounce > 0) { cat.bounce -= dt; hop += Math.sin(Math.max(0, cat.bounce) / 0.35 * Math.PI) * 0.35; }
   cat.holder.position.set(cat.x, cat.y + hop, cat.z);
   // アニメごとの浮き・ずれを、いま効いている割合で混ぜて補正（座る・寝るで浮いて奥に見えるのを防ぐ）
   let ox = 0, oy = 0, oz = 0, wsum = 0;
@@ -1032,10 +1046,10 @@ function pokeCat(cat) {
 }
 
 /* ---------------- 猫じゃらし ---------------- */
-function canUseToy(color) { return S.toyLeft[color] > 0 && S.time >= S.toyCool[color] && (S.mode === 'play' && S.phase !== 'ending' && S.phase !== 'over'); }
+function canUseToy(color) { return S.time >= S.toyCool[color] && (S.mode === 'play' && S.phase !== 'ending' && S.phase !== 'over'); }
 function useToy(color, r, c) {
   if (!canUseToy(color)) return false;
-  S.toyLeft[color]--; S.toyCool[color] = S.time + 1.2;
+  S.toyCool[color] = S.time + 1.2;
   const old = S.toys.find((t) => t.owner === color); if (old) removeToy(old);
   const toy = { owner: color, r, c, t: TOY_DUR, obj: makeToyObj(), time: 0 }; toy.obj.visible = true; S.toys.push(toy);
   let n = 0;
@@ -1084,7 +1098,7 @@ function startTurn(color) {
   if (!moves.length) { if (S.moveEnabled && rescue(color)) { S.rescueWait = true; S.rescueTries = 1; } else { doPass(color); return; } }
   if (color === S.cpu) {
     S.cpuAt = S.time + rnd(1.3, 2.6);
-    S.cpuToyAt = (S.toyLeft[S.cpu] > 0 && Math.random() < 0.4) ? S.time + rnd(0.3, 1.0) : -1;
+    S.cpuToyAt = (Math.random() < 0.35) ? S.time + rnd(0.3, 1.0) : -1;
   }
   updateHudTurn();
   if (S.attract) return;
@@ -1113,10 +1127,45 @@ function place(color, r, c) {
   return true;
 }
 function beginEnding() {
-  if (S.phase === 'ending' || S.phase === 'over') return;
+  if (S.phase === 'ending' || S.phase === 'over' || S.phase === 'reveal') return;
   S.phase = 'ending'; S.endT = 0; clearSel(); S.moveEnabled = false; S.toyMode = false; S.toyDrag = null; ghostToy.visible = false; toyRange.visible = false;
   for (const t of S.toys.slice()) removeToy(t);
   updateHudTurn();
+}
+/* ===== 結果発表: 白と黒を交互に1匹ずつ数えていく（だんだん速く、最後はためて発表） ===== */
+function startReveal() {
+  S.phase = 'reveal'; counts(); toastT = 0; $('toast').classList.remove('on');
+  const order = (col) => S.cats.filter((c) => c.color === col).sort((a, b) => (a.r - b.r) || (a.c - b.c));
+  S.reveal = { w: 0, b: 0, W: order(WHITE), B: order(BLACK), t: 0.9, i: 0, done: false, hold: 0 };
+  for (const c of S.cats) { if (c.mode === 'idle') { chooseIdle(c, { stand: true }); } }
+  $('turnLabel').textContent = '結果発表！'; $('turnLabel').className = 'turn end';
+  $('rvW').textContent = '0'; $('rvB').textContent = '0'; $('revealBox').querySelectorAll('.rv').forEach((e) => e.classList.remove('winner', 'loser'));
+  $('revealBox').classList.remove('hidden');
+  $('hint').textContent = '猫を数えています…'; Snd.duck(true);
+  showBanner('かぞえるよ…', 'sm me', 1.2);
+}
+function updateReveal(dt) {
+  const R = S.reveal; if (!R) return;
+  if (R.done) { R.hold -= dt; if (R.hold <= 0) { S.reveal = null; showResult(); } return; }
+  R.t -= dt; if (R.t > 0) return;
+  // 交互に1匹ずつ
+  const turnW = R.i % 2 === 0;
+  let cat = null, col = 0;
+  if ((turnW || R.b >= R.B.length) && R.w < R.W.length) { cat = R.W[R.w++]; col = WHITE; }
+  else if (R.b < R.B.length) { cat = R.B[R.b++]; col = BLACK; }
+  R.i++;
+  if (cat) {
+    cat.bounce = 0.35; sparkles(cat.x, 0.9, cat.z, 2);
+    const el = $(col === WHITE ? 'rvW' : 'rvB'); el.textContent = col === WHITE ? R.w : R.b; bump(el);
+    Snd.sfx.count(R.w + R.b, col);
+  }
+  const left = (R.W.length - R.w) + (R.B.length - R.b);
+  // だんだん速く、残りわずかで少しためる
+  R.t = left <= 2 ? 0.55 : Math.max(0.07, 0.3 - R.i * 0.012);
+  if (left === 0) {
+    R.done = true; R.hold = 2.0; Snd.sfx.drum();
+    if (R.w !== R.b) schedule(0.8, () => { const wW = R.w > R.b; document.querySelector('#revealBox .rv.w').classList.add(wW ? 'winner' : 'loser'); document.querySelector('#revealBox .rv.b').classList.add(wW ? 'loser' : 'winner'); });
+  }
 }
 function showResult() {
   S.phase = 'over'; S.mode = 'result'; counts();
@@ -1141,7 +1190,7 @@ function showResult() {
     else { cat.mode = 'sleepy'; playAnim(cat, 'sleep'); }
   }
   setReserve(window.innerHeight > window.innerWidth ? 110 : 60, window.innerHeight > window.innerWidth ? 470 : 215);
-  toastT = 0; $('toast').classList.remove('on'); show('result'); hide('hud');
+  toastT = 0; $('toast').classList.remove('on'); hide('revealBox'); show('result'); hide('hud');
   Snd.duck(false); if (win) Snd.sfx.win(); else if (draw) Snd.sfx.draw(); else Snd.sfx.lose();
 }
 
@@ -1150,8 +1199,8 @@ function startGame() {
   for (const t of S.toys.slice()) removeToy(t);
   for (const cat of S.cats.slice()) releaseCat(cat);
   for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { cell[r][c] = null; resv[r][c] = null; }
-  S.attract = false; S.turnNo = 0; S.rescueWait = false; S.mode = 'play'; S.phase = 'gap'; S.gapT = 2.3; S.me = store.get('myColor', WHITE); S.cpu = other(S.me); S.nextTurn = S.me; S.passes = 0; S.moveEnabled = false;
-  S.toyLeft = { 1: TOY_MAX, 2: TOY_MAX }; S.toyCool = { 1: 0, 2: 0 }; S.toyMode = false; S.sel = null; S.yaw = 0; S.pitch = 0;
+  hide('revealBox'); S.attract = false; S.hidden = false; S.reveal = null; S.turnNo = 0; S.rescueWait = false; S.mode = 'play'; S.phase = 'gap'; S.gapT = 2.3; S.me = store.get('myColor', WHITE); S.cpu = other(S.me); S.nextTurn = S.me; S.passes = 0; S.moveEnabled = false;
+  S.toyCool = { 1: 0, 2: 0 }; S.toyMode = false; S.sel = null; S.yaw = 0; S.pitch = 0;
   S.paused = false; S.events = [];
   const mid = N / 2;
   [[mid - 1, mid - 1, WHITE], [mid - 1, mid, BLACK], [mid, mid - 1, BLACK], [mid, mid, WHITE]].forEach(([r, c, col], i) => schedule(0.15 + i * 0.18, () => spawnCat(col, r, c, 2.4)));
@@ -1166,7 +1215,7 @@ function goTitle() {
   for (const t of S.toys.slice()) removeToy(t);
   for (const cat of S.cats.slice()) releaseCat(cat);
   for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { cell[r][c] = null; resv[r][c] = null; }
-  S.mode = 'title'; S.phase = 'none'; S.attract = true; S.moveEnabled = true; S.paused = false; S.events = []; S.sel = null; S.toyMode = false; S.yaw = S.pitch = 0;
+  hide('revealBox'); S.mode = 'title'; S.phase = 'none'; S.attract = true; S.moveEnabled = true; S.paused = false; S.events = []; S.sel = null; S.toyMode = false; S.yaw = S.pitch = 0;
   const cells = []; for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) cells.push([r, c]);
   cells.sort(() => Math.random() - 0.5);
   for (let i = 0; i < 12; i++) spawnCat(i % 2 ? BLACK : WHITE, cells[i][0], cells[i][1], 0);
@@ -1210,12 +1259,12 @@ let toastT = 0, bannerT = 0;
 function showToast(msg, dur = 1.4) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); toastT = dur; }
 function showBanner(msg, cls = '', dur = 1.4) { const b = $('banner'); b.textContent = msg; b.className = ''; void b.offsetWidth; b.className = 'on ' + cls; bannerT = dur; }
 function updateToyUI() {
-  const n = S.toyLeft[S.me]; $('toyCount').textContent = '×' + n;
-  $('toyBtn').classList.toggle('disabled', n <= 0 || S.mode !== 'play'); $('toyBtn').classList.toggle('active', S.toyMode);
+
 }
 function updateHudTurn() {
   const el = $('turnLabel');
-  if (S.phase === 'ending' || S.phase === 'over') { el.textContent = 'おわり！'; el.className = 'turn end'; }
+  if (S.phase === 'reveal') { el.textContent = '結果発表！'; el.className = 'turn end'; }
+  else if (S.phase === 'ending' || S.phase === 'over') { el.textContent = 'おわり！'; el.className = 'turn end'; }
   else if (S.turn === S.me && S.phase === 'turn') { el.textContent = 'あなたの番'; el.className = 'turn me'; }
   else if (S.phase === 'turn') { el.textContent = CAT_NAME[S.cpu] + 'の番'; el.className = 'turn cpu'; }
   $('sbW').classList.toggle('on', S.phase === 'turn' && S.turn === WHITE); $('sbB').classList.toggle('on', S.phase === 'turn' && S.turn === BLACK);
@@ -1224,14 +1273,18 @@ let lastHint = '';
 const rimTmp = new THREE.Color();
 function updateHud() {
   counts();
-  if ($('scW').textContent !== String(S.counts[1])) { $('scW').textContent = S.counts[1]; bump($('scW')); }
-  if ($('scB').textContent !== String(S.counts[2])) { $('scB').textContent = S.counts[2]; bump($('scB')); }
+  if (!S.hidden && S.cats.length > HIDE_AT && S.phase !== 'ending') { S.hidden = true; showToast('ここから先、猫の数はないしょ…！', 2.0); }
+  const tw = (S.reveal || S.hidden) ? '？' : String(S.counts[1]);
+  const tb = (S.reveal || S.hidden) ? '？' : String(S.counts[2]);
+  if ($('scW').textContent !== tw) { $('scW').textContent = tw; bump($('scW')); }
+  if ($('scB').textContent !== tb) { $('scB').textContent = tb; bump($('scB')); }
   const k = clamp(S.timeLeft / TURN_TIME, 0, 1);
   const fill = $('timerFill'); fill.style.width = (S.phase === 'turn' ? k * 100 : 100) + '%';
   fill.classList.toggle('warn', S.phase === 'turn' && S.turn === S.me && S.timeLeft <= 3);
   $('timerText').textContent = S.phase === 'turn' ? Math.ceil(Math.max(0, S.timeLeft)) : '';
   let hint;
-  if (S.phase === 'ending') hint = '猫たちが落ち着くまで ちょっと待ってね…';
+  if (S.phase === 'reveal') hint = '猫を数えています…';
+  else if (S.phase === 'ending') hint = '猫たちが落ち着くまで ちょっと待ってね…';
   else if (S.toyMode) hint = '猫じゃらしを使うマスをタップ（相手の猫が寄ってくるよ）';
   else if (S.phase === 'turn' && S.turn === S.cpu) hint = CAT_NAME[S.cpu] + 'が考え中…（猫じゃらしはいつでも使えるよ）';
   else if (S.sel) hint = `ひっくり返る猫は ${S.previewCats.length}匹！ もう一度タップで置く`;
@@ -1299,7 +1352,7 @@ window.addEventListener('keydown', (e) => {
     if (k === 'ArrowUp') cur.r = Math.max(0, cur.r - 1); if (k === 'ArrowDown') cur.r = Math.min(N - 1, cur.r + 1);
     if (k === 'ArrowLeft') cur.c = Math.max(0, cur.c - 1); if (k === 'ArrowRight') cur.c = Math.min(N - 1, cur.c + 1);
   } else if (k === 'Enter' || k === ' ') { e.preventDefault(); S.kb = true; onTapCell(S.cursor.r, S.cursor.c); }
-  else if (k === 't' || k === 'T') { if (S.toyLeft[S.me] > 0) { S.toyMode = !S.toyMode; S.kb = true; updateToyUI(); Snd.sfx.ui(); } }
+  else if (k === 't' || k === 'T') { { S.toyMode = !S.toyMode; S.kb = true; updateToyUI(); Snd.sfx.ui(); } }
   else if (k === 'r' || k === 'R') { S.yaw = 0; S.pitch = 0; }
 });
 function setPaused(p) {
@@ -1462,8 +1515,10 @@ function simulate(dt) {
         if (mv) place(S.cpu, mv.r, mv.c); else doPass(S.cpu);
       }
     }
+  } else if (S.phase === 'reveal') {
+    updateReveal(dt);
   } else if (S.phase === 'ending') {
-    if (!S.cats.some((c) => c.mode === 'alert' || c.mode === 'turn' || c.mode === 'walk' || c.mode === 'drop') && S.events.length === 0) { S.endT += dt; if (S.endT > 1.0) showResult(); }
+    if (!S.cats.some((c) => c.mode === 'alert' || c.mode === 'turn' || c.mode === 'walk' || c.mode === 'drop') && S.events.length === 0) { S.endT += dt; if (S.endT > 1.0) startReveal(); }
     else S.endT = 0;
   }
   validAcc += dt;
