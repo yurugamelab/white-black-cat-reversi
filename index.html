@@ -53,10 +53,34 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
 .soundBtn.corner,.corner{position:absolute;top:calc(env(safe-area-inset-top) + 10px);right:12px}
 .round{width:44px;height:44px;border-radius:50%;background:#fff;font-size:20px;box-shadow:0 3px 0 rgba(150,120,140,.2),0 6px 12px rgba(120,80,100,.12);display:flex;align-items:center;justify-content:center}
 
+/* sugoroku */
+#sugo,#vs,#sugoPreview{background:rgba(255,240,246,.93);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;z-index:20;pointer-events:auto}
+#sugo h2{margin:0;font-size:28px;font-weight:900}.sugoLead{margin:0;font-size:14px;font-weight:800;color:var(--ink-s)}
+#sugoList{display:flex;flex-direction:column-reverse;gap:10px;width:min(88vw,360px)}
+.node{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:22px;background:#fff;box-shadow:0 4px 0 rgba(150,120,140,.18);text-align:left}
+.node svg{width:48px;height:48px;flex:none}.node .no{font-size:13px;font-weight:900;color:var(--ink-s);width:18px}
+.node .nm{display:flex;flex-direction:column}.node b{font-size:18px;font-weight:900}.node small{font-size:12px;font-weight:800;color:var(--ink-s)}
+.node.current{box-shadow:0 0 0 3px var(--pink-d),0 6px 0 rgba(240,120,154,.3);animation:npulse 1s infinite alternate}
+@keyframes npulse{to{transform:scale(1.03)}}.node.current small{color:var(--pink-d)}
+.node.cleared small{color:var(--mint-d)}.node.locked{background:#ece6ea;color:#a597a0}
+#sugoDone{font-size:16px;font-weight:900;color:var(--pink-d)}
+.vsCard{width:min(90vw,380px);background:#fff;border-radius:30px;padding:20px 18px;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+#vsFace svg{width:110px;height:110px}#vsName{margin:0;font-size:28px;font-weight:900}#vsTrait{font-size:13px;font-weight:800;color:var(--ink-s)}
+#vsLine{font-size:18px;font-weight:900;color:var(--pink-d)}
+#vsMe{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:800;background:#fff3f7;padding:6px 14px;border-radius:999px}#vsMe svg{width:34px;height:34px}
+.vsCard h2{margin:0;font-size:24px;font-weight:900}.pvLead{margin:0;font-size:14.5px;line-height:1.7;font-weight:700}
+#pvList{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}.pv{display:flex;flex-direction:column;align-items:center;font-size:11.5px;font-weight:800}.pv svg{width:48px;height:48px}
+.pvApp{font-size:14px;font-weight:900;color:#fff;background:var(--pink-d);padding:8px 16px;border-radius:999px}
+#resUnlock{font-size:16px;font-weight:900;color:var(--mint-d);display:flex;align-items:center;justify-content:center;gap:6px}#resUnlock svg{width:30px;height:30px}
 /* pick */
 #pick{background:rgba(255,240,246,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:20px;z-index:20;pointer-events:auto}
 #pick h2{margin:0;font-size:26px;font-weight:900}
-.pickRow{display:flex;gap:14px}
+.pickRow{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:560px}
+.pickCard.locked,.pickCard.dark.locked{background:#ece6ea;color:#a597a0;box-shadow:0 4px 0 rgba(150,120,140,.18)}.pickCard.locked span{color:#b58ca0}
+.pickRow.many{gap:8px}.pickRow.many .pickCard{width:min(28vw,116px);padding:10px 6px 9px;border-radius:20px;gap:3px}
+.pickRow.many .pickCard svg{width:54px;height:54px}.pickRow.many .pickCard b{font-size:16px}.pickRow.many .pickCard span{font-size:10.5px;line-height:1.3}
+#pick{overflow-y:auto}
+.face{display:inline-flex}.face svg{width:30px;height:30px}.score .face svg{width:34px;height:34px}
 .pickCard{width:min(40vw,170px);padding:18px 10px 16px;border-radius:26px;background:#fff;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:6px;transition:transform .1s}
 .pickCard svg{width:84px;height:84px}
 .pickCard b{font-size:22px;font-weight:900}.pickCard span{font-size:12.5px;font-weight:700;color:var(--ink-s)}
@@ -178,9 +202,9 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
     <div class="titleBottom">
       <div id="titleBest"></div>
       <button class="btn" id="btnStart">はじめる</button>
-      <button class="btn ghost locked" id="btnSugo">🔒 すごろくモード<small>アプリ版で遊べます</small></button>
+      <button class="btn ghost locked" id="btnSugo"><span id="sugoLabel">🔒 すごろくモード</span><small id="sugoSub">勝った猫が仲間になる！</small></button>
       <button class="btn ghost" id="btnHow">あそびかた</button>
-      <div class="limited">🎁 <b>期間限定・無料公開中</b><br>アプリ版（300円）は近日公開予定</div>
+      <div class="limited" id="limited">🎁 <b>期間限定・無料公開中</b><br>アプリ版（300円）は近日公開予定</div>
       <div class="credit">ゆるゲー研究所</div>
     </div>
     <button class="round soundBtn corner">🔊</button>
@@ -188,11 +212,8 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
 
   <div id="pick" class="layer hidden">
     <h2>どっちの猫で遊ぶ？</h2>
-    <div class="pickRow">
-      <button class="pickCard" id="pickW"><svg viewBox="0 0 40 40"><path d="M6 14 L8 3 L17 9 Q20 8 23 9 L32 3 L34 14 Q38 22 32 31 Q26 37 20 37 Q14 37 8 31 Q2 22 6 14Z" fill="#fff" stroke="#e5c3cf" stroke-width="2"/><circle cx="14" cy="21" r="2.2" fill="#6b4f5a"/><circle cx="26" cy="21" r="2.2" fill="#6b4f5a"/><path d="M18 26 Q20 28 22 26" stroke="#e58aa5" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg><b>白ねこ</b><span>ふわふわ・おっとり</span></button>
-      <button class="pickCard dark" id="pickB"><svg viewBox="0 0 40 40"><path d="M6 14 L8 3 L17 9 Q20 8 23 9 L32 3 L34 14 Q38 22 32 31 Q26 37 20 37 Q14 37 8 31 Q2 22 6 14Z" fill="#4a4452" stroke="#2f2a36" stroke-width="2"/><circle cx="14" cy="21" r="2.2" fill="#ffe08a"/><circle cx="26" cy="21" r="2.2" fill="#ffe08a"/><path d="M18 26 Q20 28 22 26" stroke="#ff9fb8" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg><b>黒ねこ</b><span>つやつや・きまぐれ</span></button>
-    </div>
-    <p class="pickNote">選んだ猫があなたの仲間。あなたが先に置くよ。</p>
+    <div class="pickRow" id="pickRow"></div>
+    <p class="pickNote" id="pickNote">選んだ猫があなたの仲間。あなたが先に置くよ。</p>
     <button class="btn ghost sm" id="pickBack" style="width:auto">もどる</button>
   </div>
 
@@ -221,9 +242,9 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
 
   <div id="hud" class="layer hidden">
     <div class="top">
-      <div class="sb" id="sbW"><svg viewBox="0 0 40 40"><path d="M6 14 L8 3 L17 9 Q20 8 23 9 L32 3 L34 14 Q38 22 32 31 Q26 37 20 37 Q14 37 8 31 Q2 22 6 14Z" fill="#fff" stroke="#e5c3cf" stroke-width="2"/><circle cx="14" cy="21" r="2.2" fill="#6b4f5a"/><circle cx="26" cy="21" r="2.2" fill="#6b4f5a"/><path d="M18 26 Q20 28 22 26" stroke="#e58aa5" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg><span id="scW">2</span><em class="you hidden" id="youW">あなた</em></div>
+      <div class="sb" id="sbW"><span class="face" id="faceW"></span><span id="scW">2</span><em class="you hidden" id="youW">あなた</em></div>
       <div class="mid"><div class="turn me" id="turnLabel">あなたの番</div><div class="timer"><div id="timerFill"></div><div id="timerText"></div></div></div>
-      <div class="sb" id="sbB"><em class="you hidden" id="youB">あなた</em><span id="scB">2</span><svg viewBox="0 0 40 40"><path d="M6 14 L8 3 L17 9 Q20 8 23 9 L32 3 L34 14 Q38 22 32 31 Q26 37 20 37 Q14 37 8 31 Q2 22 6 14Z" fill="#4a4452" stroke="#2f2a36" stroke-width="2"/><circle cx="14" cy="21" r="2.2" fill="#ffe08a"/><circle cx="26" cy="21" r="2.2" fill="#ffe08a"/><path d="M18 26 Q20 28 22 26" stroke="#ff9fb8" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg></div>
+      <div class="sb" id="sbB"><em class="you hidden" id="youB">あなた</em><span id="scB">2</span><span class="face" id="faceB"></span></div>
     </div>
     <div class="hudBtns"><button class="round" id="pauseBtn">⏸</button><button class="round soundBtn">🔊</button></div>
     <div class="bottom"><div id="hint"></div></div>
@@ -233,10 +254,11 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
     <div class="card">
       <h2 id="resTitle">あなたの勝ち！</h2>
       <div class="score">
-        <div class="p"><svg viewBox="0 0 40 40"><path d="M6 14 L8 3 L17 9 Q20 8 23 9 L32 3 L34 14 Q38 22 32 31 Q26 37 20 37 Q14 37 8 31 Q2 22 6 14Z" fill="#fff" stroke="#e5c3cf" stroke-width="2"/><circle cx="14" cy="21" r="2.2" fill="#6b4f5a"/><circle cx="26" cy="21" r="2.2" fill="#6b4f5a"/></svg><b id="resScoreW">0</b></div>
+        <div class="p"><span class="face" id="resFaceW"></span><b id="resScoreW">0</b></div>
         <span class="vs">−</span>
-        <div class="p"><b id="resScoreB">0</b><svg viewBox="0 0 40 40"><path d="M6 14 L8 3 L17 9 Q20 8 23 9 L32 3 L34 14 Q38 22 32 31 Q26 37 20 37 Q14 37 8 31 Q2 22 6 14Z" fill="#4a4452" stroke="#2f2a36" stroke-width="2"/><circle cx="14" cy="21" r="2.2" fill="#ffe08a"/><circle cx="26" cy="21" r="2.2" fill="#ffe08a"/></svg></div>
+        <div class="p"><b id="resScoreB">0</b><span class="face" id="resFaceB"></span></div>
       </div>
+      <div id="resUnlock" class="hidden"></div>
       <div id="resLine">にゃんとか勝った</div>
       <div class="best" id="resBest"></div>
       <div class="resBtns">
@@ -249,6 +271,37 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
     </div>
   </div>
 
+  <div id="sugo" class="layer hidden">
+    <h2>すごろく</h2>
+    <p class="sugoLead">5匹の猫に勝つと、その猫が仲間になるよ</p>
+    <div id="sugoList"></div>
+    <div id="sugoDone" class="hidden">🎉 ぜんぶの猫が仲間になった！</div>
+    <button class="btn ghost sm" id="sugoBack" style="width:auto">タイトルへ</button>
+  </div>
+
+  <div id="vs" class="layer hidden">
+    <div class="vsCard">
+      <div id="vsFace"></div>
+      <h2 id="vsName"></h2>
+      <div id="vsTrait"></div>
+      <div id="vsLine"></div>
+      <div id="vsMe"></div>
+      <button class="btn ghost sm" id="vsChange" style="width:auto">自分の猫をかえる</button>
+      <button class="btn" id="vsGo">たたかう！</button>
+      <button class="btn ghost sm" id="vsBack" style="width:auto">もどる</button>
+    </div>
+  </div>
+
+  <div id="sugoPreview" class="layer hidden">
+    <div class="vsCard">
+      <h2>すごろくモード</h2>
+      <p class="pvLead">個性ゆたかな<b>5匹のライバル猫</b>と勝負！<br>勝つとその猫が<b>仲間</b>になって、<br>自分の猫として使えるよ。</p>
+      <div id="pvList"></div>
+      <div class="pvApp">📱 アプリ版で遊べます（近日公開）</div>
+      <button class="btn ghost sm" id="pvClose" style="width:auto">とじる</button>
+    </div>
+  </div>
+
   <div id="pauseMenu" class="layer hidden">
     <h2>ポーズ中</h2>
     <button class="btn" id="resumeBtn">つづける</button>
@@ -256,7 +309,7 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
     <button class="btn ghost" id="pauseTitle">タイトルへ</button>
   </div>
 
-  <div id="revealBox" class="hidden"><div class="rv w"><b id="rvW">0</b><span>白ねこ</span></div><i>：</i><div class="rv b"><b id="rvB">0</b><span>黒ねこ</span></div></div>
+  <div id="revealBox" class="hidden"><div class="rv w"><b id="rvW">0</b><span id="rvNameW">白ねこ</span></div><i>：</i><div class="rv b"><b id="rvB">0</b><span id="rvNameB">黒ねこ</span></div></div>
   <div id="toast"></div>
   <div id="banner"></div>
   <div id="bigCount"></div>
@@ -299,13 +352,13 @@ function scanFlips(colorAt, r, c, color) {
 /** CPU（ゆるい強さ）: 角を少し好み、ときどき気まぐれに選ぶ */
 function cpuPickMove(moves) {
   if (!moves.length) return null;
-  if (Math.random() < 0.28) return moves[Math.floor(Math.random() * moves.length)];
+  if (Math.random() < CFG.cpuRandom) return moves[Math.floor(Math.random() * moves.length)];
   let best = null, bs = -1e9;
   for (const m of moves) {
     const edgeR = m.r === 0 || m.r === N - 1, edgeC = m.c === 0 || m.c === N - 1;
     let s = m.flips.length * 1.0;
-    if (edgeR && edgeC) s += 7;
-    else if (edgeR || edgeC) s += 1.5;
+    if (edgeR && edgeC) s += CFG.cornerBonus;
+    else if (edgeR || edgeC) s += CFG.edgeBonus;
     const nearCorner = (m.r === 1 || m.r === N - 2) && (m.c === 1 || m.c === N - 2);
     if (nearCorner) s -= 3;
     s += Math.random() * 3.2;
@@ -470,7 +523,7 @@ async function loadCatAssets() {
   g.setIndex(new THREE.BufferAttribute(m.i32 ? new Uint32Array(b64ToBuf(m.I)) : new Uint16Array(b64ToBuf(m.I)), 1));
   CatAsset.geom = g;
 
-  for (const key of ['white', 'black']) {
+  for (const key of Object.keys(D.tex)) {
     const im = await loadImg(D.tex[key]);
     const t = new THREE.Texture(im);
     t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.needsUpdate = true;
@@ -537,7 +590,122 @@ function measureClipOffsets() {
   for (const [name, m] of Object.entries(meas)) CLIP_OFF[name] = { x: -m.cx, y: -m.mn, z: -m.cz };
 }
 
+/* ===== sugoroku.js : 猫の毛色（スキン）・相手猫5匹・すごろく画面 =====
+   APP=true のビルドだけ、すごろくで遊べる。Web版は紹介だけ。 */
+
+/** 毛色。bar=時間バーなどの色、light=明るい色か（文字色の切り替え用） */
+const SKINS = {
+  white:     { name: '白ねこ',   bar: '#ffffff', face: '#ffffff', line: '#e5c3cf', eye: '#6b4f5a', light: true },
+  black:     { name: '黒ねこ',   bar: '#3d3746', face: '#4a4452', line: '#2f2a36', eye: '#ffe08a', light: false },
+  buchi:     { name: 'ぶち',     bar: '#efe9e2', face: '#f6f1ea', line: '#3d3746', eye: '#6b4f5a', light: true, spot: '#3d3746' },
+  chatora:   { name: '茶トラ',   bar: '#f0a35e', face: '#f4b47a', line: '#c47a3c', eye: '#6b4f5a', light: true, stripe: '#d98a45' },
+  kijitora:  { name: 'キジトラ', bar: '#8a6d55', face: '#a08368', line: '#5e4636', eye: '#ffe08a', light: false, stripe: '#5e4636' },
+  hachiware: { name: 'ハチワレ', bar: '#2f2a33', face: '#3a343f', line: '#2a252e', eye: '#ffe08a', light: false, mask: '#ffffff' },
+  sabi:      { name: 'サビ',     bar: '#6b4630', face: '#5b4032', line: '#3a281e', eye: '#ffe08a', light: false, spot: '#b9763f' },
+};
+
+/** 相手猫5匹。cfg はこの相手と戦うときだけ変わる数値（CPUとねこ監督の性格） */
+const OPPONENTS = [
+  { id: 'nebosuke', skin: 'buchi',     name: 'ねぼすけ',     line: 'ねむい…お手やわらかに',   trait: 'よく寝る・のんびり',
+    cfg: { cpuRandom: 0.6, oppSleep: 0.45, oppWalkMul: 1.6 } },
+  { id: 'kuishinbo', skin: 'chatora',  name: 'くいしんぼう', line: 'そのじゃらし、ちょうだい', trait: '猫じゃらしに釣られやすい',
+    cfg: { lureRadius: 3, lureSteps: 5, cpuToyP: 0.15 } },
+  { id: 'yancha', skin: 'kijitora',    name: 'やんちゃ',     line: 'じっとしてられない！',     trait: '走り回る',
+    cfg: { oppWalkMul: 0.55, oppRun: 0.45, cpuRandom: 0.25 } },
+  { id: 'itazura', skin: 'hachiware',  name: 'いたずら',     line: 'じゃらしで遊んであげる',   trait: '猫じゃらしを多用してくる',
+    cfg: { cpuToyP: 0.9, cpuRandom: 0.18 } },
+  { id: 'boss', skin: 'sabi',          name: 'ボス猫',       line: 'この町の角はおれのもの',   trait: '角と辺を狙う最強の猫',
+    cfg: { cpuRandom: 0.05, cornerBonus: 12, edgeBonus: 3, turnTime: 8, comeback: 0.5, cpuToyP: 0.5 } },
+];
+
+/** 今の対戦の設定（相手で変わる）。フリー対戦はこの初期値 */
+const DEF_CFG = { cpuRandom: 0.28, cornerBonus: 7, edgeBonus: 1.5, oppSleep: 0.2, oppWalkMul: 1, oppRun: 0.1,
+  lureRadius: 2, lureSteps: 3, cpuToyP: 0.35, turnTime: 10, comeback: 1 };
+let CFG = Object.assign({}, DEF_CFG);
+
+/** 猫の顔アイコン（SVG文字列） */
+function catFaceSVG(skinKey, locked) {
+  const k = SKINS[skinKey] || SKINS.white;
+  const face = locked ? '#d9cfd5' : k.face, line = locked ? '#c4b6be' : k.line;
+  let extra = '';
+  if (!locked && k.spot) extra += `<circle cx="27" cy="15" r="5" fill="${k.spot}"/><circle cx="12" cy="28" r="3.5" fill="${k.spot}"/>`;
+  if (!locked && k.stripe) extra += `<path d="M16 9 L18 15 M20 8 L20 15 M24 9 L22 15" stroke="${k.stripe}" stroke-width="2.2" stroke-linecap="round"/>`;
+  if (!locked && k.mask) extra += `<path d="M20 15 L13 37 Q20 38 27 37 Z" fill="${k.mask}"/>`;
+  const eyes = locked ? '' : `<circle cx="14" cy="21" r="2.2" fill="${k.eye}"/><circle cx="26" cy="21" r="2.2" fill="${k.eye}"/><path d="M18 26 Q20 28 22 26" stroke="#e58aa5" stroke-width="1.8" fill="none" stroke-linecap="round"/>`;
+  const q = locked ? '<text x="20" y="28" text-anchor="middle" font-size="15" font-weight="900" fill="#fff">?</text>' : '';
+  return `<svg viewBox="0 0 40 40"><path d="M6 14 L8 3 L17 9 Q20 8 23 9 L32 3 L34 14 Q38 22 32 31 Q26 37 20 37 Q14 37 8 31 Q2 22 6 14Z" fill="${face}" stroke="${line}" stroke-width="2"/>${extra}${eyes}${q}</svg>`;
+}
+
+/** 盤面で見分けられるように、明るい毛色と暗い毛色の組み合わせにする */
+const canPair = (a, b) => SKINS[a].light !== SKINS[b].light;
+function pairFor(mine, oppSkin) { return canPair(mine, oppSkin) ? mine : (SKINS[oppSkin].light ? 'black' : 'white'); }
+/* ---- 進行の保存 ---- */
+function sugoCleared() { return store.get('sugoCleared', []); }
+function isCleared(i) { return sugoCleared().includes(OPPONENTS[i].id); }
+function nextOpp() { for (let i = 0; i < OPPONENTS.length; i++) if (!isCleared(i)) return i; return -1; }
+/** 使える毛色: 白・黒 ＋ 勝って仲間にした猫 */
+function unlockedSkins() { const s = ['white', 'black']; if (APP) for (let i = 0; i < OPPONENTS.length; i++) if (isCleared(i)) s.push(OPPONENTS[i].skin); return s; }
+function mySkin() {
+  let k = store.get('mySkin', null);
+  if (!k) k = store.get('myColor', WHITE) === BLACK ? 'black' : 'white';
+  return unlockedSkins().includes(k) ? k : 'white';
+}
+
+/* ---- すごろくマップ（アプリ版） ---- */
+function openMap() {
+  S.mode = 'map'; hide('title'); hide('result'); hide('hud'); hide('vs'); show('sugo');
+  const box = $('sugoList'); box.innerHTML = '';
+  const nx = nextOpp();
+  OPPONENTS.forEach((o, i) => {
+    const cleared = isCleared(i), current = i === nx, locked = !cleared && !current;
+    const el = document.createElement('button');
+    el.className = 'node' + (cleared ? ' cleared' : '') + (current ? ' current' : '') + (locked ? ' locked' : '');
+    el.innerHTML = `<span class="no">${i + 1}</span>${catFaceSVG(o.skin, locked)}<span class="nm"><b>${locked ? '？？？' : o.name}</b><small>${cleared ? '仲間になった！' : current ? 'つぎの相手' : 'まだ会っていない'}</small></span>`;
+    el.onclick = () => { if (locked) { Snd.sfx.cancel(); return; } Snd.sfx.ui(); openVs(i); };
+    box.appendChild(el);
+  });
+  $('sugoDone').classList.toggle('hidden', nx !== -1);
+  setReserve(innerHeight > innerWidth ? 120 : 80, innerHeight > innerWidth ? 120 : 80);
+}
+function openVs(i) {
+  const o = OPPONENTS[i]; S.vsIdx = i; hide('sugo'); show('vs'); S.mode = 'vs';
+  $('vsFace').innerHTML = catFaceSVG(o.skin); $('vsName').textContent = o.name; $('vsTrait').textContent = o.trait;
+  $('vsLine').textContent = '「' + o.line + '」';
+  renderVsMe();
+}
+function renderVsMe() {
+  const o = OPPONENTS[S.vsIdx]; const k = pairFor(mySkin(), o.skin);
+  $('vsMe').innerHTML = catFaceSVG(k) + `<span>あなたの猫：<b>${SKINS[k].name}</b></span>`;
+}
+
+/* ---- Web版: すごろくの紹介 ---- */
+function openSugoPreview() {
+  const box = $('pvList'); box.innerHTML = '';
+  OPPONENTS.forEach((o) => { const d = document.createElement('div'); d.className = 'pv'; d.innerHTML = catFaceSVG(o.skin) + `<b>${o.name}</b>`; box.appendChild(d); });
+  show('sugoPreview');
+}
+
+/* ---- 猫の色選び（解放した猫も選べる） ---- */
+function renderPick() {
+  const row = $('pickRow'); row.innerHTML = '';
+  const cur = mySkin(), have = unlockedSkins();
+  const all = APP ? ['white', 'black'].concat(OPPONENTS.map((o) => o.skin)) : ['white', 'black'];
+  row.classList.toggle('many', all.length > 2);
+  document.querySelector('#pick h2').textContent = all.length > 2 ? 'どの猫で遊ぶ？' : 'どっちの猫で遊ぶ？';
+  for (const k of all) {
+    const o = OPPONENTS.find((x) => x.skin === k);
+    const vsSkin = S.pickFor === 'vs' ? OPPONENTS[S.vsIdx].skin : null, clash = vsSkin && have.includes(k) && !canPair(k, vsSkin);
+    const ok = have.includes(k) && !clash;
+    const b = document.createElement('button');
+    b.className = 'pickCard' + (SKINS[k].light ? '' : ' dark') + (k === cur ? ' sel' : '') + (ok ? '' : ' locked');
+    b.innerHTML = catFaceSVG(k, !have.includes(k)) + `<b>${have.includes(k) ? SKINS[k].name : '？？？'}</b><span>${clash ? '相手と見分けにくいよ' : ok ? (o ? o.name + 'だった猫' : (k === 'white' ? 'ふわふわ・おっとり' : 'つやつや・きまぐれ')) : (o ? o.name + 'に勝つと' : '')}</span>`;
+    b.onclick = () => { if (!ok) { Snd.sfx.cancel(); return; } choose(k); };
+    row.appendChild(b);
+  }
+}
+
 /* ===== main.js : 描画・猫の動き・ゲーム進行・UI ===== */
+const APP = false; // __APP_FLAG__ ビルドでアプリ版だけ true になる
 const APP_URL = ''; // アプリ版ストアURL（公開後に設定）
 const FOLLOW_URL = 'https://x.com/Yurugamelab';
 const GAME_URL = 'https://yurugamelab.github.io/white-black-cat-reversi/';
@@ -549,7 +717,8 @@ const CAT_SCALE = 2.0;
 const CAT_YAW = 0;
 const HALF = N / 2;
 const HIDE_AT = 16;          // 猫がこの数を超えたら、点数は「？」にして最後まで内緒
-const CAT_NAME = { 1: '白ねこ', 2: '黒ねこ' };
+/** その側の猫の呼び名（すごろくの相手は名前、それ以外は毛色の名前） */
+function sideName(side) { if (S.opp != null && side === S.cpu) return OPPONENTS[S.opp].name; return SKINS[S.skin[side]].name; }
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const rnd = (a, b) => a + Math.random() * (b - a);
@@ -567,13 +736,13 @@ const S = {
   mode: 'loading',      // loading | title | howto | play | result
   phase: 'none',        // turn | gap | ending | over
   time: 0, paused: false, moveEnabled: false, attract: false,
-  me: WHITE, cpu: BLACK, turn: WHITE, timeLeft: TURN_TIME, cpuAt: 0, cpuToyAt: -1, gapT: 0, nextTurn: WHITE, passes: 0, endT: 0, noMoveT: 0, turnNo: 0, rescueWait: false, rescueTries: 0,
+  me: WHITE, cpu: BLACK, skin: { 1: 'white', 2: 'black' }, opp: null, vsIdx: 0, turnMax: TURN_TIME, pickFor: '', turn: WHITE, timeLeft: TURN_TIME, cpuAt: 0, cpuToyAt: -1, gapT: 0, nextTurn: WHITE, passes: 0, endT: 0, noMoveT: 0, turnNo: 0, rescueWait: false, rescueTries: 0,
   sel: null, toyMode: false, toyDrag: null, toyHover: null, kb: false, cursor: { r: 2, c: 2 },
   toyCool: { 1: 0, 2: 0 }, toys: [],
   cats: [], pool: [], events: [], previewCats: [], valid: [], validT: 0,
   yaw: 0, pitch: 0, camDist: 14, camIdle: 0,
   reserve: { top: 200, bottom: 200 }, reserveTo: { top: 200, bottom: 200 },
-  counts: { 1: 0, 2: 0 }, slowT: 0,
+  counts: { 1: 0, 2: 0 }, slowT: 0, sugoLoss: {}, lastWin: false,
 };
 const cell = [], resv = [];
 for (let r = 0; r < N; r++) { cell.push(new Array(N).fill(null)); resv.push(new Array(N).fill(null)); }
@@ -739,7 +908,7 @@ function makeCat() {
   return { rig, holder, inner, shadow, color: 0, shown: 0, r: -1, c: -1, x: 0, z: 0, y: 0, vy: 0, yaw: 0, targetYaw: 0, mode: 'hidden',
     actions: {}, cur: null, curName: '', nextWalk: 0, nextAnim: 0, busyUntil: 0, sleeping: false, kind: '', wig: 0, bang, zzz, dest: null, prev: null, lure: null, flip: null, speed: 1, timer: 0, gait: 'walk' };
 }
-function setCatColor(cat, color) { cat.shown = color; cat.rig.mesh.material = CatAsset.mats[color === WHITE ? 'white' : 'black']; }
+function setCatColor(cat, color) { cat.shown = color; cat.rig.mesh.material = CatAsset.mats[S.skin[color]] || CatAsset.mats[color === WHITE ? 'white' : 'black']; }
 function playAnim(cat, name, opt = {}) {
   const clip = CatAsset.clips[name]; if (!clip) return;
   if (cat.curName === name && !opt.restart) return;
@@ -756,7 +925,10 @@ function playAnim(cat, name, opt = {}) {
 function chooseIdle(cat, opt = {}) {
   const r = Math.random(); let kind;
   if (opt.stand) kind = 'stand';
-  else if (r < 0.2 && !opt.noSleep) kind = 'sleep'; else if (r < 0.4) kind = 'lick'; else if (r < 0.5) kind = 'scratch'; else if (r < 0.7) kind = 'sit'; else kind = 'stand';
+  else {
+    const sleepP = (S.mode === 'play' && cat.color === S.cpu) ? CFG.oppSleep : 0.2, q = Math.random();
+    if (r < sleepP && !opt.noSleep) kind = 'sleep'; else if (q < 0.25) kind = 'lick'; else if (q < 0.375) kind = 'scratch'; else if (q < 0.625) kind = 'sit'; else kind = 'stand';
+  }
   cat.sleeping = false; cat.kind = kind;
   switch (kind) {
     case 'sleep': playAnim(cat, pick(['sleep', 'lie'])); cat.sleeping = true; cat.busyUntil = S.time + rnd(8, 14); cat.nextAnim = cat.busyUntil; break;
@@ -857,7 +1029,7 @@ function directorScore(cat, d, g, base, side) {
     else sc += clamp(after - now, -2, 2) * 0.4;
   }
   const w0 = countOn(g, WHITE), b0 = countOn(g, BLACK), lead = w0 - b0;
-  if (Math.abs(lead) >= 3) { const trail = lead > 0 ? BLACK : WHITE; sc += (countOn(h, trail) - countOn(g, trail)) * Math.min(1.5, Math.abs(lead) / 5); }
+  if (Math.abs(lead) >= 3) { const trail = lead > 0 ? BLACK : WHITE; sc += (countOn(h, trail) - countOn(g, trail)) * Math.min(1.5, Math.abs(lead) / 5) * (trail === S.me ? CFG.comeback : 1); }
   let nb = 0; for (const [dr, dc] of DIRS) { const r = d.r + dr, c = d.c + dc; if (inB(r, c) && h[r][c] && !(r === cat.r && c === cat.c)) nb++; }
   sc += Math.min(nb, 4) * 0.3;
   // 同じ色の仲間のそばにごちゃっと集まりたがる（リードしている側ほど強く）→ 固まりの端を挟まれると一気に逆転
@@ -866,7 +1038,7 @@ function directorScore(cat, d, g, base, side) {
   const myLead = countOn(h, cat.color) - countOn(h, other(cat.color));
   sc += Math.min(same, 5) * CLUMP_PULL * (myLead > 0 ? 1.6 : (myLead < 0 ? 0.5 : 1));
   // 負けている側が「一手でたくさん取れる形」を作る（集まった固まりの端を空けておく）→ 派手な逆転
-  if (lead !== 0 && SETUP_PULL > 0) { const trail = lead > 0 ? BLACK : WHITE; sc += clamp(bestCapture(h, trail) - bestCapture(g, trail), -3, 4) * SETUP_PULL; }
+  if (lead !== 0 && SETUP_PULL > 0) { const trail = lead > 0 ? BLACK : WHITE; sc += clamp(bestCapture(h, trail) - bestCapture(g, trail), -3, 4) * SETUP_PULL * (trail === S.me ? CFG.comeback : 1); }
   if (isCorner(d.r, d.c)) sc -= 2;
   if (cat.prev && cat.prev.r === d.r && cat.prev.c === d.c) sc -= 0.5;
   return sc;
@@ -940,7 +1112,7 @@ function startWalk(cat, d, alertTime) {
   cat.targetYaw = Math.atan2(cellX(d.c) - cat.x, cellZ(d.r) - cat.z);
   const diag = d.r !== cat.r && d.c !== cat.c;
   cat.gait = Math.random() < (cat.lure ? 0.8 : 0.25) ? 'trot' : 'walk';
-  if (!cat.lure && Math.random() < 0.1) cat.gait = 'run';
+  if (!cat.lure && Math.random() < (S.mode === 'play' && cat.color === S.cpu ? CFG.oppRun : 0.1)) cat.gait = 'run';
   cat.speed = cat.gait === 'run' ? 3.0 : (cat.gait === 'trot' ? 1.9 : 1.0);
   cat.mode = 'alert'; cat.timer = alertTime != null ? alertTime : (cat.lure ? 0.5 : (cat.gait === 'run' ? 0.4 : 0.95)); cat.wig = 0;
   playAnim(cat, 'crouch', { fade: 0.15 }); cat.sleeping = false;
@@ -951,7 +1123,7 @@ function arrive(cat) {
   cat.rescue = false;
   cell[cat.r][cat.c] = null; cat.prev = { r: cat.r, c: cat.c }; cat.r = d.r; cat.c = d.c; cell[d.r][d.c] = cat; resv[d.r][d.c] = null; cat.dest = null;
   cat.x = cellX(d.c); cat.z = cellZ(d.r);
-  cat.mode = 'idle'; chooseIdle(cat, { noSleep: Math.random() < 0.5 }); cat.nextWalk = S.time + wander(1.0, 3.0);
+  cat.mode = 'idle'; chooseIdle(cat, { noSleep: Math.random() < 0.5 }); cat.nextWalk = S.time + wander(1.0, 3.0) * (S.mode === 'play' && cat.color === S.cpu ? CFG.oppWalkMul : 1);
   if (cat.lure) { cat.lure.steps--; cat.nextWalk = S.time + rnd(0.1, 0.4); }
   let fl = scanFlips(colorAt, d.r, d.c, cat.color);
   counts(); if (fl.length >= S.counts[other(cat.color)]) fl = []; // 歩いただけで相手が全滅はしない（やさしさ）
@@ -1057,8 +1229,9 @@ function useToy(color, r, c) {
   let n = 0;
   for (const cat of S.cats) {
     if (cat.color === color || cat.mode === 'hidden' || cat.sleeping || isCorner(cat.r, cat.c)) continue;
-    if (Math.max(Math.abs(cat.r - r), Math.abs(cat.c - c)) <= TOY_RADIUS) {
-      cat.lure = { r, c, steps: TOY_STEPS, until: S.time + TOY_DUR, toy }; n++;
+    const rad = color === S.me ? CFG.lureRadius : TOY_RADIUS, steps = color === S.me ? CFG.lureSteps : TOY_STEPS;
+    if (Math.max(Math.abs(cat.r - r), Math.abs(cat.c - c)) <= rad) {
+      cat.lure = { r, c, steps, until: S.time + TOY_DUR, toy }; n++;
       if (cat.mode === 'idle') { cat.nextWalk = S.time + rnd(0.05, 0.35); cat.busyUntil = Math.min(cat.busyUntil, S.time); }
     }
   }
@@ -1095,24 +1268,24 @@ function afterBoardChange() {
   else if (S.phase !== 'ending' && S.phase !== 'over' && total >= N * N) beginEnding();
 }
 function startTurn(color) {
-  S.phase = 'turn'; S.turn = color; S.timeLeft = TURN_TIME; clearSel(); S.noMoveT = 0; S.turnNo++; S.rescueTries = 0; S.rescueWait = false;
+  S.phase = 'turn'; S.turn = color; S.turnMax = color === S.me ? CFG.turnTime : TURN_TIME; S.timeLeft = S.turnMax; clearSel(); S.noMoveT = 0; S.turnNo++; S.rescueTries = 0; S.rescueWait = false;
   const moves = validMoves(color);
   if (!moves.length) { if (S.moveEnabled && rescue(color)) { S.rescueWait = true; S.rescueTries = 1; } else { doPass(color); return; } }
   if (color === S.cpu) {
     S.cpuAt = S.time + rnd(1.3, 2.6);
-    S.cpuToyAt = (Math.random() < 0.35) ? S.time + rnd(0.3, 1.0) : -1;
+    S.cpuToyAt = (Math.random() < CFG.cpuToyP) ? S.time + rnd(0.3, 1.0) : -1;
   }
   updateHudTurn();
   if (S.attract) return;
   if (color === S.me) {
-    showBanner('あなたの番！', color === WHITE ? 'sm wt' : 'sm bt', 1.1); Snd.sfx.meow(1.3, 0.22);
+    showBanner('あなたの番！', SKINS[S.skin[color]].light ? 'sm wt' : 'sm bt', 1.1); Snd.sfx.meow(1.3, 0.22);
     if (S.turnNo >= 3 && !store.get('toyTip', false)) { store.set('toyTip', true); schedule(1.2, () => showToast('空いているマスを長押しで 猫じゃらし！', 2.6)); }
   }
-  else { showBanner(CAT_NAME[S.cpu] + 'の番', color === WHITE ? 'sm wt' : 'sm bt', 1.1); Snd.sfx.meow(0.78, 0.25); }
+  else { showBanner(sideName(S.cpu) + 'の番', SKINS[S.skin[color]].light ? 'sm wt' : 'sm bt', 1.1); Snd.sfx.meow(0.78, 0.25); }
 }
 function doPass(color) {
   S.passes++;
-  showToast(color === S.me ? 'あなたは置けないので パス にゃ〜' : CAT_NAME[S.cpu] + 'はパス にゃ〜', 1.6); Snd.sfx.pass();
+  showToast(color === S.me ? 'あなたは置けないので パス にゃ〜' : sideName(S.cpu) + 'はパス にゃ〜', 1.6); Snd.sfx.pass();
   if (S.passes >= 12) { beginEnding(); return; } // 猫が動いて置ける場所ができるのを少し待つ
   S.phase = 'gap'; S.gapT = 1.0; S.nextTurn = other(color);
 }
@@ -1140,7 +1313,7 @@ function startReveal() {
   const order = (col) => S.cats.filter((c) => c.color === col).sort((a, b) => (a.r - b.r) || (a.c - b.c));
   S.reveal = { w: 0, b: 0, W: order(WHITE), B: order(BLACK), t: 0.9, i: 0, done: false, hold: 0 };
   for (const c of S.cats) { if (c.mode === 'idle') { chooseIdle(c, { stand: true }); } }
-  $('turnLabel').textContent = '結果発表！'; $('turnLabel').className = 'turn end';
+  $('turnLabel').textContent = '結果発表！'; $('turnLabel').className = 'turn end'; $('turnLabel').style.cssText = '';
   $('rvW').textContent = '0'; $('rvB').textContent = '0'; $('revealBox').querySelectorAll('.rv').forEach((e) => e.classList.remove('winner', 'loser'));
   $('revealBox').classList.remove('hidden');
   $('hint').textContent = '猫を数えています…'; Snd.duck(true);
@@ -1173,7 +1346,7 @@ function showResult() {
   S.phase = 'over'; S.mode = 'result'; counts();
   const my = S.counts[S.me], opp = S.counts[S.cpu];
   const win = my > opp, draw = my === opp;
-  const line = hitokoto(my, opp, CAT_NAME[S.me], CAT_NAME[S.cpu]);
+  const line = hitokoto(my, opp, sideName(S.me), sideName(S.cpu));
   $('resTitle').textContent = win ? 'あなたの勝ち！' : (draw ? 'ひきわけ！' : 'ざんねん…');
   $('resTitle').className = win ? 'win' : (draw ? 'draw' : 'lose');
   $('resScoreW').textContent = S.counts[WHITE]; $('resScoreB').textContent = S.counts[BLACK];
@@ -1185,6 +1358,18 @@ function showResult() {
   $('resBest').textContent = (note ? note + '　' : '') + (best > 0 ? `ベスト +${best}` : 'ベスト ー');
   $('resBest').className = note ? 'best new' : 'best';
   S.share = { my, opp, win, draw, line, w: S.counts[WHITE], b: S.counts[BLACK] };
+  // すごろく: 勝つとその猫が仲間に
+  S.lastWin = win; $('resUnlock').classList.add('hidden');
+  $('retryBtn').textContent = 'もう一度遊ぶ'; $('toTitleBtn').textContent = 'タイトルへ';
+  if (S.opp != null) {
+    const o = OPPONENTS[S.opp];
+    $('toTitleBtn').textContent = 'すごろくへ';
+    if (win) {
+      S.sugoLoss[S.opp] = 0;
+      if (!isCleared(S.opp)) { store.set('sugoCleared', sugoCleared().concat(o.id)); $('resUnlock').innerHTML = catFaceSVG(o.skin) + `${o.name}が仲間になった！`; $('resUnlock').classList.remove('hidden'); }
+      $('retryBtn').textContent = nextOpp() === -1 ? 'すごろくへ' : 'つぎの相手へ';
+    } else { S.sugoLoss[S.opp] = (S.sugoLoss[S.opp] || 0) + 1; $('retryBtn').textContent = 'もう一回にゃ'; }
+  }
   const winner = win ? S.me : (draw ? 0 : S.cpu);
   for (const cat of S.cats) {
     if (cat.mode === 'hidden') continue;
@@ -1196,19 +1381,27 @@ function showResult() {
   Snd.duck(false); if (win) Snd.sfx.win(); else if (draw) Snd.sfx.draw(); else Snd.sfx.lose();
 }
 
-function startGame() {
+function startGame(opts = {}) {
   Snd.init(); Snd.startBgm();
+  if (opts.opp === undefined) opts.opp = S.opp; // もう一度遊ぶ: 同じ相手
   for (const t of S.toys.slice()) removeToy(t);
   for (const cat of S.cats.slice()) releaseCat(cat);
   for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { cell[r][c] = null; resv[r][c] = null; }
-  hide('revealBox'); S.attract = false; S.hidden = false; S.reveal = null; S.turnNo = 0; S.rescueWait = false; S.mode = 'play'; S.phase = 'gap'; S.gapT = 2.3; S.me = store.get('myColor', WHITE); S.cpu = other(S.me); S.nextTurn = S.me; S.passes = 0; S.moveEnabled = false;
+  hide('revealBox'); S.attract = false; S.hidden = false; S.reveal = null; S.turnNo = 0; S.rescueWait = false; S.mode = 'play'; S.phase = 'gap'; S.gapT = 2.3; S.me = WHITE; S.cpu = BLACK; S.nextTurn = S.me;
+  S.opp = (APP && opts.opp != null) ? opts.opp : null;
+  CFG = Object.assign({}, DEF_CFG, S.opp != null ? OPPONENTS[S.opp].cfg : {});
+  if (S.opp != null && (S.sugoLoss[S.opp] || 0) >= 3) { CFG.cpuRandom = Math.min(0.7, CFG.cpuRandom + 0.2); CFG.comeback = Math.max(CFG.comeback, 1.5); } // 3連敗のやさしさ（表示しない）
+  let mine = mySkin();
+  const oppSkin = S.opp != null ? OPPONENTS[S.opp].skin : (SKINS[mine].light ? 'black' : 'white');
+  mine = pairFor(mine, oppSkin); // 明るい色と暗い色の組み合わせに
+  S.skin = { 1: mine, 2: oppSkin }; S.passes = 0; S.moveEnabled = false;
   S.toyCool = { 1: 0, 2: 0 }; S.toyMode = false; S.sel = null; S.yaw = 0; S.pitch = 0;
   S.paused = false; S.events = [];
   const mid = N / 2;
   [[mid - 1, mid - 1, WHITE], [mid - 1, mid, BLACK], [mid, mid - 1, BLACK], [mid, mid, WHITE]].forEach(([r, c, col], i) => schedule(0.15 + i * 0.18, () => spawnCat(col, r, c, 2.4)));
   setReserve(innerHeight > innerWidth ? 150 : 84, innerHeight > innerWidth ? 175 : 96);
-  hide('title'); hide('howto'); hide('pick'); hide('result'); hide('pauseMenu'); show('hud');
-  $('youW').classList.toggle('hidden', S.me !== WHITE); $('youB').classList.toggle('hidden', S.me !== BLACK);
+  hide('title'); hide('howto'); hide('pick'); hide('result'); hide('pauseMenu'); hide('sugo'); hide('vs'); hide('sugoPreview'); show('hud');
+  $('youW').classList.remove('hidden'); $('youB').classList.add('hidden'); paintFaces();
   counts(); updateHudTurn(); updateToyUI();
   showBanner('スタート！'); Snd.sfx.start();
 }
@@ -1217,12 +1410,12 @@ function goTitle() {
   for (const t of S.toys.slice()) removeToy(t);
   for (const cat of S.cats.slice()) releaseCat(cat);
   for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { cell[r][c] = null; resv[r][c] = null; }
-  hide('revealBox'); S.mode = 'title'; S.phase = 'none'; S.attract = true; S.moveEnabled = true; S.paused = false; S.events = []; S.sel = null; S.toyMode = false; S.yaw = S.pitch = 0;
+  hide('revealBox'); S.opp = null; S.skin = { 1: 'white', 2: 'black' }; CFG = Object.assign({}, DEF_CFG); S.mode = 'title'; S.phase = 'none'; S.attract = true; S.moveEnabled = true; S.paused = false; S.events = []; S.sel = null; S.toyMode = false; S.yaw = S.pitch = 0;
   const cells = []; for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) cells.push([r, c]);
   cells.sort(() => Math.random() - 0.5);
   for (let i = 0; i < 12; i++) spawnCat(i % 2 ? BLACK : WHITE, cells[i][0], cells[i][1], 0);
   setReserve(innerHeight > innerWidth ? 160 : 150, innerHeight > innerWidth ? 350 : 120);
-  hide('hud'); hide('result'); hide('howto'); hide('pick'); hide('pauseMenu'); show('title');
+  hide('hud'); hide('result'); hide('howto'); hide('pick'); hide('pauseMenu'); hide('sugo'); hide('vs'); hide('sugoPreview'); show('title');
   $('titleBest').textContent = store.get('best', 0) > 0 ? `ベスト +${store.get('best', 0)}` : '';
   Snd.startBgm(); Snd.duck(false);
 }
@@ -1261,8 +1454,8 @@ function updateHudTurn() {
   const el = $('turnLabel');
   if (S.phase === 'reveal') { el.textContent = '結果発表！'; el.className = 'turn end'; }
   else if (S.phase === 'ending' || S.phase === 'over') { el.textContent = 'おわり！'; el.className = 'turn end'; }
-  else if (S.turn === S.me && S.phase === 'turn') { el.textContent = 'あなたの番'; el.className = 'turn ' + (S.turn === WHITE ? 'tw' : 'tb'); }
-  else if (S.phase === 'turn') { el.textContent = CAT_NAME[S.cpu] + 'の番'; el.className = 'turn ' + (S.turn === WHITE ? 'tw' : 'tb'); }
+  else if (S.turn === S.me && S.phase === 'turn') { el.textContent = 'あなたの番'; paintTurnLabel(el); }
+  else if (S.phase === 'turn') { el.textContent = sideName(S.cpu) + 'の番'; paintTurnLabel(el); }
   $('sbW').classList.toggle('on', S.phase === 'turn' && S.turn === WHITE); $('sbB').classList.toggle('on', S.phase === 'turn' && S.turn === BLACK);
 }
 let lastHint = '';
@@ -1274,17 +1467,23 @@ function updateHud() {
   const tb = (S.reveal || S.hidden) ? '？' : String(S.counts[2]);
   if ($('scW').textContent !== tw) { $('scW').textContent = tw; bump($('scW')); }
   if ($('scB').textContent !== tb) { $('scB').textContent = tb; bump($('scB')); }
-  const k = clamp(S.timeLeft / TURN_TIME, 0, 1);
-  const fill = $('timerFill'); fill.classList.toggle('w', S.turn === WHITE); fill.classList.toggle('b', S.turn === BLACK); fill.style.width = (S.phase === 'turn' ? k * 100 : 100) + '%';
+  const k = clamp(S.timeLeft / S.turnMax, 0, 1);
+  const fill = $('timerFill'); fill.style.background = fill.classList.contains('warn') ? '' : SKINS[S.skin[S.turn]].bar; fill.style.width = (S.phase === 'turn' ? k * 100 : 100) + '%';
   fill.classList.toggle('warn', S.phase === 'turn' && S.turn === S.me && S.timeLeft <= 3);
   $('timerText').textContent = S.phase === 'turn' ? Math.ceil(Math.max(0, S.timeLeft)) : '';
   let hint;
   if (S.phase === 'reveal') hint = '猫を数えています…';
   else if (S.phase === 'ending') hint = '猫たちが落ち着くまで ちょっと待ってね…';
   else if (S.toyMode) hint = '猫じゃらしを使うマスをタップ（相手の猫が寄ってくるよ）';
-  else if (S.phase === 'turn' && S.turn === S.cpu) hint = CAT_NAME[S.cpu] + 'が考え中…（猫じゃらしはいつでも使えるよ）';
+  else if (S.phase === 'turn' && S.turn === S.cpu) hint = sideName(S.cpu) + 'が考え中…（猫じゃらしはいつでも使えるよ）';
   else hint = 'マスをタップして置く（長押しで猫じゃらし）';
   if (hint !== lastHint) { $('hint').textContent = hint; lastHint = hint; }
+}
+function paintTurnLabel(el) { const k = SKINS[S.skin[S.turn]]; el.className = 'turn'; el.style.background = k.bar; el.style.color = k.light ? 'var(--ink)' : '#fff'; el.style.boxShadow = k.light ? '0 0 0 2px #e5c3cf' : ''; }
+function paintFaces() {
+  $('faceW').innerHTML = catFaceSVG(S.skin[WHITE]); $('faceB').innerHTML = catFaceSVG(S.skin[BLACK]);
+  $('resFaceW').innerHTML = catFaceSVG(S.skin[WHITE]); $('resFaceB').innerHTML = catFaceSVG(S.skin[BLACK]);
+  $('rvNameW').textContent = sideName(WHITE); $('rvNameB').textContent = sideName(BLACK);
 }
 function bump(el) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
 
@@ -1358,13 +1557,13 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && S.m
 /* ---------------- 画面ボタン ---------------- */
 function startFlow() {
   Snd.init(); Snd.sfx.ui();
-  hide('title'); show('pick'); S.mode = 'pick';
-  const cur = store.get('myColor', WHITE);
-  $('pickW').classList.toggle('sel', cur === WHITE); $('pickB').classList.toggle('sel', cur === BLACK);
+  S.pickFor = ''; S.opp = null; openPick();
 }
-function choose(color) {
-  Snd.sfx.meow(color === WHITE ? 1.3 : 0.8, 0.28); store.set('myColor', color); hide('pick');
-  if (!store.get('seenHowto', false)) { store.set('seenHowto', true); openHowto(true); } else startGame();
+function openPick() { hide('title'); hide('vs'); show('pick'); S.mode = 'pick'; renderPick(); $('pickNote').textContent = S.pickFor === 'vs' ? '使う猫をえらんでね' : '選んだ猫があなたの仲間。あなたが先に置くよ。'; }
+function choose(k) {
+  Snd.sfx.meow(SKINS[k].light ? 1.3 : 0.8, 0.28); store.set('mySkin', k); hide('pick');
+  if (S.pickFor === 'vs') { openVs(S.vsIdx); return; }
+  if (!store.get('seenHowto', false)) { store.set('seenHowto', true); openHowto(true); } else startGame({ opp: null });
 }
 let howtoPage = 0, howtoThenPlay = false;
 function openHowto(thenPlay) {
@@ -1376,22 +1575,26 @@ function renderHowto() {
   $('howNext').textContent = howtoPage === 2 ? (howtoThenPlay ? 'あそぶ！' : 'とじる') : 'つぎへ';
 }
 $('btnStart').onclick = startFlow;
-$('btnSugo').onclick = () => { Snd.init(); Snd.sfx.cancel(); showToast('すごろくはアプリ版で遊べるよ！', 2.2); };
-$('pickW').onclick = () => choose(WHITE);
-$('pickB').onclick = () => choose(BLACK);
-$('pickBack').onclick = () => { Snd.sfx.ui(); goTitle(); };
+$('btnSugo').onclick = () => { Snd.init(); Snd.sfx.ui(); if (APP) openMap(); else openSugoPreview(); };
+$('pvClose').onclick = () => { Snd.sfx.ui(); hide('sugoPreview'); };
+$('sugoBack').onclick = () => { Snd.sfx.ui(); goTitle(); };
+$('vsBack').onclick = () => { Snd.sfx.ui(); openMap(); };
+$('vsChange').onclick = () => { Snd.sfx.ui(); S.pickFor = 'vs'; openPick(); };
+$('vsGo').onclick = () => { Snd.sfx.ui(); hide('vs'); startGame({ opp: S.vsIdx }); };
+$('pickBack').onclick = () => { Snd.sfx.ui(); if (S.pickFor === 'vs') { hide('pick'); openVs(S.vsIdx); } else goTitle(); };
+if (APP) { $('sugoLabel').textContent = 'すごろくモード'; $('btnSugo').classList.remove('locked'); hide('limited'); hide('appBtn'); }
 $('btnHow').onclick = () => { Snd.init(); Snd.sfx.ui(); openHowto(false); };
 $('howNext').onclick = () => {
   Snd.sfx.ui();
-  if (howtoPage < 2) { howtoPage++; renderHowto(); } else { if (howtoThenPlay) startGame(); else goTitle(); }
+  if (howtoPage < 2) { howtoPage++; renderHowto(); } else { if (howtoThenPlay) startGame({ opp: null }); else goTitle(); }
 };
-$('howSkip').onclick = () => { Snd.sfx.ui(); if (howtoThenPlay) startGame(); else goTitle(); };
+$('howSkip').onclick = () => { Snd.sfx.ui(); if (howtoThenPlay) startGame({ opp: null }); else goTitle(); };
 $('pauseBtn').onclick = () => { Snd.init(); setPaused(true); };
 $('resumeBtn').onclick = () => setPaused(false);
 $('pauseTitle').onclick = () => { goTitle(); };
 $('pauseRetry').onclick = () => { startGame(); };
-$('retryBtn').onclick = () => { Snd.sfx.ui(); startGame(); };
-$('toTitleBtn').onclick = () => { Snd.sfx.ui(); goTitle(); };
+$('retryBtn').onclick = () => { Snd.sfx.ui(); if (S.opp != null && S.lastWin) openMap(); else startGame(); };
+$('toTitleBtn').onclick = () => { Snd.sfx.ui(); if (S.opp != null) openMap(); else goTitle(); };
 function syncSoundBtns() { const m = Snd.isMuted(); document.querySelectorAll('.soundBtn').forEach((b) => { b.textContent = m ? '🔇' : '🔊'; }); }
 document.querySelectorAll('.soundBtn').forEach((b) => b.onclick = () => { Snd.init(); Snd.setMuted(!Snd.isMuted()); syncSoundBtns(); });
 $('shareBtn').onclick = shareResult;
@@ -1499,7 +1702,7 @@ function simulate(dt) {
         // 時間切れ: 勝手に置かず、パスして相手の番へ
         clearSel(); S.toyMode = false; updateToyUI();
         S.phase = 'gap'; S.gapT = 1.2; S.nextTurn = S.cpu; S.rescueWait = false;
-        showToast('時間切れ… ' + CAT_NAME[S.cpu] + 'の番だよ', 1.6); Snd.sfx.pass();
+        showToast('時間切れ… ' + sideName(S.cpu) + 'の番だよ', 1.6); Snd.sfx.pass();
       }
     } else {
       if (S.cpuToyAt > 0 && S.time >= S.cpuToyAt) { S.cpuToyAt = -1; cpuToy(); }
@@ -1569,8 +1772,8 @@ function updateVisuals(dt) {
   window.__frame.material.color.lerp(rimTmp.setHex(tgt), Math.min(1, dt * 8));
   gaugeMesh.visible = inTurn;
   if (inTurn) {
-    const p = clamp(S.timeLeft / TURN_TIME, 0, 1), low = S.turn === S.me && S.timeLeft <= 3;
-    const col = low ? '#ff3d66' : (S.turn === WHITE ? '#ffffff' : '#3d3746');
+    const p = clamp(S.timeLeft / S.turnMax, 0, 1), low = S.turn === S.me && S.timeLeft <= 3;
+    const col = low ? '#ff3d66' : SKINS[S.skin[S.turn]].bar;
     drawGauge(p, col, low ? (0.6 + 0.4 * Math.abs(Math.sin(performance.now() / 120))) : 1);
   }
   const bc = $('bigCount'), showBig = false;
