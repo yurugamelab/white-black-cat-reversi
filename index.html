@@ -113,6 +113,7 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
 #toast.on{opacity:1;transform:translate(-50%,0)}
 #banner{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%) scale(.6);font-size:clamp(40px,12vw,72px);font-weight:900;color:#fff;text-shadow:0 4px 0 var(--pink-d),3px 4px 0 var(--pink-d),-3px 4px 0 var(--pink-d),0 10px 20px rgba(160,80,110,.3);opacity:0;pointer-events:none;z-index:16;white-space:nowrap}
 #banner.on{animation:ban 1.4s ease-out}
+#banner.combo{top:34%;font-size:clamp(44px,13vw,76px);color:#fff6b0;text-shadow:0 4px 0 #ff6f98,3px 4px 0 #ff6f98,-3px 4px 0 #ff6f98,0 0 24px rgba(255,200,80,.8),0 10px 24px rgba(160,80,110,.4)}
 #banner.sm{top:calc(env(safe-area-inset-top) + 150px);font-size:clamp(26px,7.5vw,40px)}
 #banner.sm.me{color:#fff;text-shadow:0 3px 0 var(--pink-d),2px 3px 0 var(--pink-d),-2px 3px 0 var(--pink-d),0 8px 16px rgba(160,80,110,.3)}
 #banner.sm.cpu{color:#fff;text-shadow:0 3px 0 #5b4d9a,2px 3px 0 #5b4d9a,-2px 3px 0 #5b4d9a,0 8px 16px rgba(60,40,120,.35)}
@@ -503,7 +504,8 @@ const TURN_TIME = 10;        // 1手の制限時間（秒）
 const TOY_MAX = 3;           // 猫じゃらしの回数
 const TOY_DUR = 4.5;         // 猫じゃらしが出ている時間
 const TOY_RADIUS = 2;        // 誘導できる距離（マス）
-const TOY_STEPS = 3;         // 最大何マス歩くか
+const TOY_STEPS = 3;
+const BIG_FLIP = 5;          // この数以上ひっくり返ると派手な演出         // 最大何マス歩くか
 const CAT_SCALE = 2.0;
 const CAT_YAW = 0;
 const HALF = N / 2;
@@ -531,7 +533,7 @@ const S = {
   cats: [], pool: [], events: [], previewCats: [], valid: [], validT: 0,
   yaw: 0, pitch: 0, camDist: 14, camIdle: 0,
   reserve: { top: 200, bottom: 200 }, reserveTo: { top: 200, bottom: 200 },
-  counts: { 1: 0, 2: 0 },
+  counts: { 1: 0, 2: 0 }, slowT: 0,
 };
 const cell = [], resv = [];
 for (let r = 0; r < N; r++) { cell.push(new Array(N).fill(null)); resv.push(new Array(N).fill(null)); }
@@ -745,6 +747,11 @@ function spawnCat(color, r, c, height) {
 function scheduleFlip(cat, delay) { cat.flip = { delay, t: 0, swapped: false }; }
 function applyFlips(list, fr, fc, baseDelay, kind) {
   let i = 0;
+  if (list.length >= BIG_FLIP && (S.mode === 'play')) {
+    const n = list.length;
+    schedule(baseDelay + 0.1, () => { showBanner(`${n}匹 ごろごろ！`, 'combo', 1.8); S.slowT = 1.3; });
+    for (let k = 0; k < Math.min(n, 6); k++) schedule(baseDelay + 0.35 + k * 0.16, () => Snd.sfx.meow(0.9 + k * 0.08, 0.16));
+  }
   for (const [r, c] of list) {
     const cat = cell[r][c]; if (!cat) continue;
     cat.color = cell[fr][fc].color;
@@ -772,9 +779,11 @@ function crossing(r0, c0, r1, c1) {
    ・点差が開いたら、負けている側が少し得をする動きを選びやすくする
    ・仲間のそばへ寄る（ばらけて挟めなくなるのを防ぐ）
    ・角の猫は動かない／角へは入りにくい（角を取る作戦が意味を持つ）
-   ・置いたばかりの猫とその手でひっくり返った猫は、2手のあいだ動かない
-   ・あなたの番の間は、同時に歩く猫は1匹まで */
+   ・置いたばかりの猫とその手でひっくり返った猫は、相手の1手のあいだ動かない
+   ・同じ色の仲間のそばにごちゃっと集まる（リード側ほど強い）→ 後半ほど大きな逆転が起きる */
 const DIR_TEMP = 0.8;   // 小さいほど監督の意図どおりに動く（大きいほど気まぐれ）
+let CLUMP_PULL = 0.3;  // 同じ色で固まりたがる強さ
+let SETUP_PULL = 1.2;  // 負けている側が大量に取れる形を作る強さ（自動プレイ比較で決定）
 const isCorner = (r, c) => (r === 0 || r === N - 1) && (c === 0 || c === N - 1);
 const isEdge = (r, c) => r === 0 || r === N - 1 || c === 0 || c === N - 1;
 function gridNow() { const g = []; for (let r = 0; r < N; r++) { const row = []; for (let c = 0; c < N; c++) row.push(colorAt(r, c)); g.push(row); } return g; }
@@ -795,6 +804,14 @@ function movesOn(h, color, self) {
   }
   return n;
 }
+function bestCapture(h, color) {
+  let best = 0;
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+    if (h[r][c] || (resv[r][c] && resv[r][c] !== 'sel')) continue;
+    const n = scanFlips((a, b) => h[a][b], r, c, color).length; if (n > best) best = n;
+  }
+  return best;
+}
 function nextSide() { if (S.mode !== 'play') return 0; return S.phase === 'turn' ? S.turn : (S.phase === 'gap' ? S.nextTurn : 0); }
 function directorScore(cat, d, g, base, side) {
   const h = gridAfterWalk(g, cat, d); let sc = 0;
@@ -808,6 +825,13 @@ function directorScore(cat, d, g, base, side) {
   if (Math.abs(lead) >= 3) { const trail = lead > 0 ? BLACK : WHITE; sc += (countOn(h, trail) - countOn(g, trail)) * Math.min(1.5, Math.abs(lead) / 5); }
   let nb = 0; for (const [dr, dc] of DIRS) { const r = d.r + dr, c = d.c + dc; if (inB(r, c) && h[r][c] && !(r === cat.r && c === cat.c)) nb++; }
   sc += Math.min(nb, 4) * 0.3;
+  // 同じ色の仲間のそばにごちゃっと集まりたがる（リードしている側ほど強く）→ 固まりの端を挟まれると一気に逆転
+  let same = 0;
+  for (const [dr, dc] of DIRS) { const r = d.r + dr, c = d.c + dc; if (inB(r, c) && !(r === cat.r && c === cat.c) && h[r][c] === cat.color) same++; }
+  const myLead = countOn(h, cat.color) - countOn(h, other(cat.color));
+  sc += Math.min(same, 5) * CLUMP_PULL * (myLead > 0 ? 1.6 : (myLead < 0 ? 0.5 : 1));
+  // 負けている側が「一手でたくさん取れる形」を作る（集まった固まりの端を空けておく）→ 派手な逆転
+  if (lead !== 0 && SETUP_PULL > 0) { const trail = lead > 0 ? BLACK : WHITE; sc += clamp(bestCapture(h, trail) - bestCapture(g, trail), -3, 4) * SETUP_PULL; }
   if (isCorner(d.r, d.c)) sc -= 2;
   if (cat.prev && cat.prev.r === d.r && cat.prev.c === d.c) sc -= 0.5;
   return sc;
@@ -1365,7 +1389,8 @@ function tick(ts) {
     const k = 1 - Math.pow(0.001, dt); rs.top += (rt.top - rs.top) * k; rs.bottom += (rt.bottom - rs.bottom) * k; fitCamera();
   }
   if (S.mode === 'loading') { renderer.render(scene, camera); return; }
-  const simDt = S.paused || S.mode === 'howto' ? 0 : dt;
+  if (S.slowT > 0) S.slowT -= dt;
+  const simDt = S.paused || S.mode === 'howto' ? 0 : dt * (S.slowT > 0 ? 0.5 : 1);
   if (simDt > 0) simulate(simDt);
   updateCamera(dt); updateVisuals(dt);
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) $('toast').classList.remove('on'); }
