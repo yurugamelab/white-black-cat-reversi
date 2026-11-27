@@ -103,7 +103,7 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
 .hudBtns .round{pointer-events:auto;width:38px;height:38px;font-size:17px}
 .bottom{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 12px);display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none}
 #hint{background:var(--card);padding:8px 16px;border-radius:999px;font-size:13.5px;font-weight:800;box-shadow:0 3px 0 rgba(150,120,140,.16);max-width:92vw;text-align:center}
-#toyBtn{pointer-events:auto;position:relative;width:76px;height:76px;border-radius:50%;background:linear-gradient(180deg,#fff,#ffeaf1);box-shadow:0 6px 0 rgba(240,120,154,.3),0 12px 20px rgba(120,80,100,.2);display:flex;align-items:center;justify-content:center;font-size:36px;touch-action:none}
+#toyBtn{pointer-events:none;position:relative;width:76px;height:76px;border-radius:50%;background:linear-gradient(180deg,#fff,#ffeaf1);box-shadow:0 6px 0 rgba(240,120,154,.3),0 12px 20px rgba(120,80,100,.2);display:flex;align-items:center;justify-content:center;font-size:36px;touch-action:none}
 #toyBtn.active{background:linear-gradient(180deg,#ffe08a,#ffc15e);box-shadow:0 0 0 4px #fff,0 0 0 8px var(--pink),0 12px 20px rgba(120,80,100,.2);animation:wob .6s infinite alternate}
 #toyBtn.disabled{filter:grayscale(1);opacity:.55}
 @keyframes wob{to{transform:rotate(8deg) scale(1.05)}}
@@ -196,7 +196,7 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
       <div class="slide">
         <h3>③ 猫じゃらしで誘導</h3>
         <div class="mini" style="grid-template-columns:repeat(4,44px)"><i class="w"></i><i></i><i class="toy"></i><i class="b"></i></div>
-        <p>🪶ボタンを<b>ドラッグ</b>して盤面へ。<br>近くの<b>黒猫</b>が寄ってくるよ。<br>手番を使わず、<b>3回</b>まで！<br>猫を長押しするとなでられるよ。</p>
+        <p>空いているマスを<b>長押し</b>すると猫じゃらし！<br>近くの<b>相手の猫</b>が寄ってくるよ。<br>手番を使わず、<b>3回</b>まで。<br>猫を長押しするとなでられるよ。</p>
       </div>
     </div>
     <div class="dots"><i></i><i></i><i></i></div>
@@ -210,7 +210,7 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
       <div class="sb" id="sbB"><em class="you hidden" id="youB">あなた</em><span id="scB">2</span><svg viewBox="0 0 40 40"><path d="M6 14 L8 3 L17 9 Q20 8 23 9 L32 3 L34 14 Q38 22 32 31 Q26 37 20 37 Q14 37 8 31 Q2 22 6 14Z" fill="#4a4452" stroke="#2f2a36" stroke-width="2"/><circle cx="14" cy="21" r="2.2" fill="#ffe08a"/><circle cx="26" cy="21" r="2.2" fill="#ffe08a"/><path d="M18 26 Q20 28 22 26" stroke="#ff9fb8" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg></div>
     </div>
     <div class="hudBtns"><button class="round" id="pauseBtn">⏸</button><button class="round soundBtn">🔊</button></div>
-    <div class="bottom"><div id="hint"></div><button id="toyBtn" aria-label="猫じゃらし">🪶<span id="toyCount">×3</span></button></div>
+    <div class="bottom"><div id="hint"></div><div id="toyBtn" aria-label="猫じゃらしの残り回数">🪶<span id="toyCount">×3</span></div></div>
   </div>
 
   <div id="result" class="layer hidden">
@@ -494,6 +494,28 @@ function makeCatRig(colorKey) {
   mesh.bind(new THREE.Skeleton(bones, inv), new THREE.Matrix4().fromArray(m.bind));
   mesh.frustumCulled = false;
   return { root, mesh, mixer: new THREE.AnimationMixer(root) };
+}
+
+/* 座る・寝るなどのアニメは体が浮いたり前後にずれたりするので、接地と位置の補正値をクリップごとに測っておく */
+const CLIP_OFF = {};
+function measureClipOffsets() {
+  const names = ['idle', 'idle2', 'idle3', 'sit', 'sit2', 'lick', 'lie', 'sleep', 'scratch', 'caress', 'crouch', 'walk', 'trot', 'run'];
+  const rig = makeCatRig('white'), mesh = rig.mesh, pos = mesh.geometry.attributes.position, v = new THREE.Vector3();
+  const meas = {};
+  for (const name of names) {
+    const clip = CatAsset.clips[name]; if (!clip) continue;
+    rig.mixer.stopAllAction(); rig.mixer.clipAction(clip).reset().play();
+    let cx = 0, cz = 0, mn = 0;
+    for (let k = 0; k < 4; k++) {
+      rig.mixer.setTime(clip.duration * k / 4); rig.root.updateMatrixWorld(true); mesh.skeleton.update();
+      let x = 0, z = 0, lo = 1e9, m = 0;
+      for (let i = 0; i < pos.count; i += 15) { v.fromBufferAttribute(pos, i); mesh.applyBoneTransform(i, v); v.applyMatrix4(mesh.matrixWorld); x += v.x; z += v.z; lo = Math.min(lo, v.y); m++; }
+      cx += x / m / 4; cz += z / m / 4; mn += lo / 4;
+    }
+    meas[name] = { cx, cz, mn };
+  }
+  // 体の中心をマスの中心に、いちばん低い所を盤面の高さに合わせる
+  for (const [name, m] of Object.entries(meas)) CLIP_OFF[name] = { x: -m.cx, y: -m.mn, z: -m.cz };
 }
 
 /* ===== main.js : 描画・猫の動き・ゲーム進行・UI ===== */
@@ -984,6 +1006,15 @@ function updateCat(cat, dt) {
     }
   }
   cat.holder.position.set(cat.x, cat.y + hop, cat.z);
+  // アニメごとの浮き・ずれを、いま効いている割合で混ぜて補正（座る・寝るで浮いて奥に見えるのを防ぐ）
+  let ox = 0, oy = 0, oz = 0, wsum = 0;
+  for (const [name, a] of Object.entries(cat.actions)) {
+    const w = a.getEffectiveWeight(); if (w <= 0.001 || !a.isRunning()) continue;
+    const o = CLIP_OFF[name]; if (!o) continue;
+    ox += o.x * w; oy += o.y * w; oz += o.z * w; wsum += w;
+  }
+  if (wsum > 0) { ox /= wsum; oy /= wsum; oz /= wsum; }
+  cat.inner.position.set(ox * CAT_SCALE, oy * CAT_SCALE, oz * CAT_SCALE);
   cat.holder.rotation.y = cat.yaw + spin + (cat.mode === 'alert' ? cat.wig : 0);
   cat.bang.visible = false;
   if (cat.bang.visible) cat.bang.position.y = 1.35 + Math.abs(Math.sin(S.time * 14)) * 0.12;
@@ -1057,7 +1088,10 @@ function startTurn(color) {
   }
   updateHudTurn();
   if (S.attract) return;
-  if (color === S.me) { showBanner('あなたの番！', 'sm me', 1.1); Snd.sfx.meow(1.3, 0.22); }
+  if (color === S.me) {
+    showBanner('あなたの番！', 'sm me', 1.1); Snd.sfx.meow(1.3, 0.22);
+    if (S.turnNo >= 3 && !store.get('toyTip', false)) { store.set('toyTip', true); schedule(1.2, () => showToast('空いているマスを長押しで 猫じゃらし！', 2.6)); }
+  }
   else { showBanner(CAT_NAME[S.cpu] + 'の番', 'sm cpu', 1.1); Snd.sfx.meow(0.78, 0.25); }
 }
 function doPass(color) {
@@ -1219,12 +1253,19 @@ function cellFromPointer(cx, cy) {
 let down = null;
 canvas.addEventListener('pointerdown', (e) => {
   Snd.init(); if (S.paused || (S.mode !== 'play' && S.mode !== 'title')) return;
-  S.kb = false; canvas.setPointerCapture(e.pointerId);
+  S.kb = false; try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
   down = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, moved: false, long: false, cell: cellFromPointer(e.clientX, e.clientY), id: e.pointerId };
   down.lp = setTimeout(() => {
     if (!down || down.moved) return;
     const c = down.cell && cell[down.cell.r][down.cell.c];
-    if (c) { down.long = true; pokeCat(c); } else if (S.sel) { down.long = true; clearSel(); Snd.sfx.cancel(); }
+    if (c) { down.long = true; pokeCat(c); return; }
+    if (down.cell && S.mode === 'play') {
+      // 空きマスを長押し → その場に猫じゃらし（盤面から目を離さずに使える）
+      down.long = true;
+      if (S.sel && S.sel.r === down.cell.r && S.sel.c === down.cell.c) clearSel();
+      if (useToy(S.me, down.cell.r, down.cell.c)) { try { navigator.vibrate && navigator.vibrate(15); } catch (e) {} }
+      else Snd.sfx.cancel();
+    }
   }, 480);
 });
 canvas.addEventListener('pointermove', (e) => {
@@ -1247,23 +1288,6 @@ canvas.addEventListener('pointerup', (e) => {
 });
 canvas.addEventListener('pointercancel', () => { if (down) clearTimeout(down.lp); down = null; });
 
-const toyBtn = $('toyBtn');
-toyBtn.addEventListener('pointerdown', (e) => {
-  Snd.init(); if (S.mode !== 'play' || S.paused) return;
-  S.toyDrag = { sx: e.clientX, sy: e.clientY, moved: false }; toyBtn.setPointerCapture(e.pointerId); e.preventDefault();
-});
-toyBtn.addEventListener('pointermove', (e) => {
-  const d = S.toyDrag; if (!d) return;
-  if (!d.moved && Math.hypot(e.clientX - d.sx, e.clientY - d.sy) > 12) d.moved = true;
-  if (d.moved) S.toyHover = cellFromPointer(e.clientX, e.clientY);
-});
-toyBtn.addEventListener('pointerup', (e) => {
-  const d = S.toyDrag; S.toyDrag = null; if (!d) return;
-  if (!d.moved) { if (S.toyLeft[S.me] > 0) { S.toyMode = !S.toyMode; Snd.sfx.ui(); updateToyUI(); } return; }
-  const cp = cellFromPointer(e.clientX, e.clientY);
-  if (cp && S.mode === 'play') { if (useToy(S.me, cp.r, cp.c)) S.toyMode = false; updateToyUI(); }
-  S.toyHover = null;
-});
 window.addEventListener('keydown', (e) => {
   if (S.mode === 'title' && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); startFlow(); return; }
   if (S.mode !== 'play') return;
@@ -1510,6 +1534,7 @@ async function boot() {
   fitCamera();
   try {
     await loadCatAssets();
+    measureClipOffsets();
     for (let i = 0; i < N * N; i++) { const cat = makeCat(); S.pool.push(cat); if (i % 6 === 5) { $('loadBar').style.width = (40 + i / 36 * 60) + '%'; await new Promise((r) => setTimeout(r, 0)); } }
   } catch (e) { $('loadMsg').textContent = '読み込みに失敗しました: ' + e.message; console.error(e); return; }
   syncSoundBtns();
