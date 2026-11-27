@@ -45,6 +45,8 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
 .logo .sub{margin-top:10px;font-size:14px;font-weight:700;color:var(--ink-s)}
 .titleBottom{display:flex;flex-direction:column;align-items:center;gap:12px}
 #titleBest{font-weight:800;color:var(--pink-d);height:22px}
+.btn.locked{background:#ece6ea;color:#a597a0;box-shadow:0 4px 0 rgba(150,120,140,.18);display:flex;flex-direction:column;align-items:center;line-height:1.2;padding:10px 18px}
+.btn.locked small{font-size:11.5px;font-weight:800;margin-top:3px;color:#b58ca0}
 .limited{background:#fff;border-radius:14px;padding:7px 14px;font-size:12.5px;font-weight:700;color:var(--ink);box-shadow:0 3px 0 rgba(150,120,140,.15);text-align:center;line-height:1.5}
 .limited b{color:var(--pink-d)}
 .credit{font-size:11px;color:var(--ink-s);font-weight:700}
@@ -176,6 +178,7 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
     <div class="titleBottom">
       <div id="titleBest"></div>
       <button class="btn" id="btnStart">はじめる</button>
+      <button class="btn ghost locked" id="btnSugo">🔒 すごろくモード<small>アプリ版で遊べます</small></button>
       <button class="btn ghost" id="btnHow">あそびかた</button>
       <div class="limited">🎁 <b>期間限定・無料公開中</b><br>アプリ版（300円）は近日公開予定</div>
       <div class="credit">ゆるゲー研究所</div>
@@ -1218,7 +1221,7 @@ function goTitle() {
   const cells = []; for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) cells.push([r, c]);
   cells.sort(() => Math.random() - 0.5);
   for (let i = 0; i < 12; i++) spawnCat(i % 2 ? BLACK : WHITE, cells[i][0], cells[i][1], 0);
-  setReserve(innerHeight > innerWidth ? 160 : 150, innerHeight > innerWidth ? 290 : 120);
+  setReserve(innerHeight > innerWidth ? 160 : 150, innerHeight > innerWidth ? 350 : 120);
   hide('hud'); hide('result'); hide('howto'); hide('pick'); hide('pauseMenu'); show('title');
   $('titleBest').textContent = store.get('best', 0) > 0 ? `ベスト +${store.get('best', 0)}` : '';
   Snd.startBgm(); Snd.duck(false);
@@ -1373,6 +1376,7 @@ function renderHowto() {
   $('howNext').textContent = howtoPage === 2 ? (howtoThenPlay ? 'あそぶ！' : 'とじる') : 'つぎへ';
 }
 $('btnStart').onclick = startFlow;
+$('btnSugo').onclick = () => { Snd.init(); Snd.sfx.cancel(); showToast('すごろくはアプリ版で遊べるよ！', 2.2); };
 $('pickW').onclick = () => choose(WHITE);
 $('pickB').onclick = () => choose(BLACK);
 $('pickBack').onclick = () => { Snd.sfx.ui(); goTitle(); };
