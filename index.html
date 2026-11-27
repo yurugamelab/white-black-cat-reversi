@@ -168,7 +168,7 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
       <div class="slide">
         <h3>② 猫は勝手に動く！</h3>
         <div class="mini" style="grid-template-columns:repeat(4,44px)"><i class="w"></i><i class="b"></i><i class="w arrow"></i><i></i></div>
-        <p>猫は<b>気ままに歩き回る</b>よ。歩いた猫がはさむと<b>勝手にひっくり返る</b>！<br>しゃがんで<b>「!」</b>が出たら歩き出すサイン、<b>足あと</b>が行き先。<br><b>寝てる猫・毛づくろい中</b>は動かない＝チャンス！<br>1手は<b>10秒</b>、縁のゲージが減っていくよ。</p>
+        <p>猫は<b>気ままに歩き回る</b>よ。<br>歩いた猫がはさむと<b>勝手にひっくり返る</b>！<br><b style="color:#f0789a">ピンクの肉球</b>が置ける場所のヒント。<br>1手は<b>10秒</b>。時間切れはパスになるよ。</p>
       </div>
       <div class="slide">
         <h3>③ 猫じゃらしで誘導</h3>
@@ -605,7 +605,7 @@ const flatMat = (tex, color, op = 1) => new THREE.MeshBasicMaterial({ map: tex, 
 const markers = [], previewRings = [];
 const markerLayer = new THREE.Group(); scene.add(markerLayer);
 for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
-  const m = new THREE.Mesh(planeGeo, flatMat(texPaw, 0xffffff, 0.0)); m.position.set(cellX(c), 0.02, cellZ(r)); m.scale.setScalar(0.5); markerLayer.add(m); markers.push({ m, r, c });
+  const m = new THREE.Mesh(planeGeo, flatMat(texPaw, 0xff6f98, 0.0)); m.position.set(cellX(c), 0.02, cellZ(r)); m.scale.setScalar(0.62); markerLayer.add(m); markers.push({ m, r, c });
 }
 for (let i = 0; i < 36; i++) { const m = new THREE.Mesh(planeGeo, flatMat(texRing, 0xff7fa8, 0.9)); m.visible = false; m.position.y = 0.03; m.scale.setScalar(1.15); markerLayer.add(m); previewRings.push(m); }
 const intentMarks = [];
@@ -788,7 +788,6 @@ function arrive(cat) {
   if (fl.length) {
     applyFlips(fl, d.r, d.c, 0.08);
     hearts(cat.x, 0.7, cat.z, 2);
-    if (S.mode === 'play') { showToast('猫が歩いてひっくり返した！', 1.1); }
   }
   afterBoardChange();
 }
@@ -853,9 +852,9 @@ function updateCat(cat, dt) {
   }
   cat.holder.position.set(cat.x, cat.y + hop, cat.z);
   cat.holder.rotation.y = cat.yaw + spin + (cat.mode === 'alert' ? cat.wig : 0);
-  cat.bang.visible = cat.mode === 'alert';
+  cat.bang.visible = false;
   if (cat.bang.visible) cat.bang.position.y = 1.35 + Math.abs(Math.sin(S.time * 14)) * 0.12;
-  const zOn = cat.sleeping && cat.mode === 'idle'; cat.zzz.visible = zOn;
+  const zOn = false; cat.zzz.visible = zOn;
   if (zOn) { const k = (S.time * 0.8) % 1; cat.zzz.position.set(0.2 + k * 0.25, 0.9 + k * 0.5, 0); cat.zzz.material.opacity = Math.min(1, (1 - k) * 2); cat.zzz.scale.setScalar(0.5 + k * 0.2); }
   const sh = 1 - Math.min(0.5, (cat.y + hop) * 0.25);
   cat.shadow.position.set(cat.x, 0.012, cat.z); cat.shadow.scale.set(1.0 * sh, 1, 1.0 * sh);
@@ -883,7 +882,7 @@ function useToy(color, r, c) {
       if (cat.mode === 'idle') { cat.nextWalk = S.time + rnd(0.05, 0.35); cat.busyUntil = Math.min(cat.busyUntil, S.time); }
     }
   }
-  Snd.sfx.toy(); if (color === WHITE) { showToast(n ? `猫じゃらし！ ${n}匹が気になってる` : '猫じゃらし！（まわりに黒猫がいないにゃ）', 1.6); }
+  Snd.sfx.toy();
   updateToyUI(); return true;
 }
 function removeToy(toy) { scene.remove(toy.obj); S.toys = S.toys.filter((t) => t !== toy); for (const cat of S.cats) if (cat.lure && cat.lure.toy === toy) cat.lure = null; }
@@ -1025,7 +1024,7 @@ function onTapCell(r, c) {
     const fl = scanFlips(colorAt, r, c, WHITE);
     if (fl.length && !spareRule(WHITE, fl)) { clearSel(); S.sel = { r, c }; resv[r][c] = 'sel'; Snd.sfx.select(); return; }
   }
-  Snd.sfx.cancel(); showToast('そこには置けないにゃ', 0.9);
+  Snd.sfx.cancel();
 }
 function updatePreview() {
   if (!S.sel) { selRing.visible = false; S.previewCats = []; return; }
@@ -1269,10 +1268,10 @@ function simulate(dt) {
     if (S.turn === WHITE) {
       if (S.timeLeft <= 3 && Math.ceil(S.timeLeft + dt) !== Math.ceil(S.timeLeft)) Snd.sfx.tick();
       if (S.timeLeft <= 0) {
-        let mv = null;
-        if (S.sel && scanFlips(colorAt, S.sel.r, S.sel.c, WHITE).length) mv = { r: S.sel.r, c: S.sel.c };
-        else { const all = validMoves(WHITE); if (all.length) mv = pick(all); }
-        if (mv) { clearSel(); showToast('時間切れ！ 猫が勝手に置いたにゃ', 1.4); place(WHITE, mv.r, mv.c); } else doPass(WHITE);
+        // 時間切れ: 勝手に置かず、パスして相手の番へ
+        clearSel(); S.toyMode = false; updateToyUI();
+        S.phase = 'gap'; S.gapT = 1.2; S.nextTurn = BLACK;
+        showToast('時間切れ… 黒ねこの番だよ', 1.6); Snd.sfx.pass();
       }
     } else {
       if (S.cpuToyAt > 0 && S.time >= S.cpuToyAt) { S.cpuToyAt = -1; cpuToy(); }
@@ -1296,7 +1295,7 @@ function cpuToy() {
   }
   if (!cands.length) return;
   cands.sort((a, b) => b.n - a.n); const p = cands[Math.floor(Math.random() * Math.min(3, cands.length))];
-  useToy(BLACK, p.r, p.c); showToast('黒ねこが猫じゃらしを使った！', 1.5);
+  useToy(BLACK, p.r, p.c);
 }
 function updateVisuals(dt) {
   const t = S.time;
@@ -1306,7 +1305,7 @@ function updateVisuals(dt) {
   if (showValid) { vmap = {}; for (const m of validMoves(WHITE)) vmap[m.r * N + m.c] = 1; }
   for (const mk of markers) {
     const on = vmap && vmap[mk.r * N + mk.c] && !(S.sel && S.sel.r === mk.r && S.sel.c === mk.c);
-    const target = on ? 0.5 + Math.sin(t * 3 + mk.r + mk.c) * 0.12 : 0;
+    const target = on ? 0.85 + Math.sin(t * 4) * 0.12 : 0;
     mk.m.material.opacity += (target - mk.m.material.opacity) * Math.min(1, dt * 10);
     mk.m.visible = mk.m.material.opacity > 0.02;
   }
@@ -1321,7 +1320,7 @@ function updateVisuals(dt) {
   const movers = S.cats.filter((c) => (c.mode === 'alert' || c.mode === 'turn' || c.mode === 'walk') && c.dest);
   intentMarks.forEach((m, i) => {
     const c = movers[i];
-    if (!c) { m.visible = false; return; }
+    if (!c || true) { m.visible = false; return; }
     m.visible = true; m.position.x = cellX(c.dest.c); m.position.z = cellZ(c.dest.r); m.material.color.setHex(c.color === WHITE ? 0xffffff : 0x4a4452);
     m.material.opacity = 0.55 + Math.sin(t * 10 + i) * 0.2; m.rotation.y = -c.targetYaw;
   });
@@ -1342,7 +1341,7 @@ function updateVisuals(dt) {
     const col = S.turn === BLACK ? '#6f5fc0' : (low ? '#ff3d66' : (p < 0.5 ? '#ffb347' : '#ff7fa8'));
     drawGauge(p, col, low ? (0.6 + 0.4 * Math.abs(Math.sin(performance.now() / 120))) : 1);
   }
-  const bc = $('bigCount'), showBig = inTurn && S.turn === WHITE && S.timeLeft <= 3 && S.timeLeft > 0;
+  const bc = $('bigCount'), showBig = false;
   if (showBig) { const n = String(Math.ceil(S.timeLeft)); if (bc.textContent !== n) { bc.textContent = n; bc.classList.remove('pop'); void bc.offsetWidth; bc.classList.add('pop'); } bc.classList.add('on'); } else bc.classList.remove('on');
   if (S.mode === 'play') updateHud();
   if (bannerT > 0) { bannerT -= dt; if (bannerT <= 0) $('banner').className = ''; }
