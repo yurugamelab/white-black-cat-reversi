@@ -502,7 +502,7 @@ const S = {
   mode: 'loading',      // loading | title | howto | play | result
   phase: 'none',        // turn | gap | ending | over
   time: 0, paused: false, moveEnabled: false, attract: false,
-  turn: WHITE, timeLeft: TURN_TIME, cpuAt: 0, cpuToyAt: -1, gapT: 0, nextTurn: WHITE, passes: 0, endT: 0, noMoveT: 0,
+  turn: WHITE, timeLeft: TURN_TIME, cpuAt: 0, cpuToyAt: -1, gapT: 0, nextTurn: WHITE, passes: 0, endT: 0, noMoveT: 0, turnNo: 0, rescueWait: false, rescueTries: 0,
   sel: null, toyMode: false, toyDrag: null, toyHover: null, kb: false, cursor: { r: 2, c: 2 },
   toyLeft: { 1: TOY_MAX, 2: TOY_MAX }, toyCool: { 1: 0, 2: 0 }, toys: [],
   cats: [], pool: [], events: [], previewCats: [], valid: [], validT: 0,
@@ -704,7 +704,7 @@ function chooseIdle(cat, opt = {}) {
 function releaseCat(cat) {
   if (cat.r >= 0 && cell[cat.r][cat.c] === cat) cell[cat.r][cat.c] = null;
   if (cat.dest && resv[cat.dest.r][cat.dest.c] === cat) resv[cat.dest.r][cat.dest.c] = null;
-  cat.mode = 'hidden'; cat.holder.visible = false; cat.shadow.visible = false; cat.r = cat.c = -1; cat.dest = null; cat.lure = null; cat.flip = null; cat.color = 0; cat.sleeping = false; cat.bang.visible = false; cat.zzz.visible = false;
+  cat.mode = 'hidden'; cat.holder.visible = false; cat.shadow.visible = false; cat.r = cat.c = -1; cat.dest = null; cat.lure = null; cat.flip = null; cat.color = 0; cat.sleeping = false; cat.restUntil = 0; cat.rescue = false; cat.bang.visible = false; cat.zzz.visible = false;
   S.cats = S.cats.filter((c) => c !== cat); if (!S.pool.includes(cat)) S.pool.push(cat);
 }
 function spawnCat(color, r, c, height) {
@@ -725,6 +725,7 @@ function applyFlips(list, fr, fc, baseDelay, kind) {
   for (const [r, c] of list) {
     const cat = cell[r][c]; if (!cat) continue;
     cat.color = cell[fr][fc].color;
+    if (kind === 'place') cat.restUntil = S.turnNo + 2;
     if (cat.sleeping || cat.mode === 'idle' && cat.busyUntil > S.time) { cat.mode = 'idle'; chooseIdle(cat, { stand: true }); cat.nextWalk = S.time + rnd(1.2, 2.4); }
     scheduleFlip(cat, baseDelay + Math.hypot(r - fr, c - fc) * 0.11);
     const d = baseDelay + Math.hypot(r - fr, c - fc) * 0.11, idx = i++;
@@ -742,6 +743,90 @@ function crossing(r0, c0, r1, c1) {
   }
   return false;
 }
+/* ===== ねこ監督: プレイヤーには気ままに見せつつ、裏では狙いを持って猫を動かす =====
+   ・置ける場所がなければ、作るように動かす（救済）
+   ・相手の置き場所を全部つぶす動きはしない
+   ・点差が開いたら、負けている側が少し得をする動きを選びやすくする
+   ・仲間のそばへ寄る（ばらけて挟めなくなるのを防ぐ）
+   ・角の猫は動かない／角へは入りにくい（角を取る作戦が意味を持つ）
+   ・置いたばかりの猫とその手でひっくり返った猫は、2手のあいだ動かない
+   ・あなたの番の間は、同時に歩く猫は1匹まで */
+const DIR_TEMP = 0.8;   // 小さいほど監督の意図どおりに動く（大きいほど気まぐれ）
+const isCorner = (r, c) => (r === 0 || r === N - 1) && (c === 0 || c === N - 1);
+const isEdge = (r, c) => r === 0 || r === N - 1 || c === 0 || c === N - 1;
+function gridNow() { const g = []; for (let r = 0; r < N; r++) { const row = []; for (let c = 0; c < N; c++) row.push(colorAt(r, c)); g.push(row); } return g; }
+function countOn(h, color) { let n = 0; for (const row of h) for (const v of row) if (v === color) n++; return n; }
+function gridAfterWalk(g, cat, d) {
+  const h = g.map((row) => row.slice()); h[cat.r][cat.c] = 0; h[d.r][d.c] = cat.color;
+  const fl = scanFlips((a, b) => h[a][b], d.r, d.c, cat.color);
+  if (fl.length && fl.length < countOn(h, other(cat.color))) for (const [a, b] of fl) h[a][b] = cat.color;
+  return h;
+}
+function movesOn(h, color, self) {
+  const total = countOn(h, WHITE) + countOn(h, BLACK), opp = countOn(h, other(color)); let n = 0;
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+    if (h[r][c]) continue;
+    const rv = resv[r][c]; if (rv && rv !== self && rv !== 'sel') continue;
+    const fl = scanFlips((a, b) => h[a][b], r, c, color);
+    if (fl.length && !(total < 14 && fl.length >= opp)) n++;
+  }
+  return n;
+}
+function nextSide() { if (S.mode !== 'play') return 0; return S.phase === 'turn' ? S.turn : (S.phase === 'gap' ? S.nextTurn : 0); }
+function directorScore(cat, d, g, base, side) {
+  const h = gridAfterWalk(g, cat, d); let sc = 0;
+  if (side) {
+    const now = base, after = movesOn(h, side, cat);
+    if (now === 0) sc += after > 0 ? 6 : 0;
+    else if (after === 0) sc -= (side === WHITE && S.phase === 'turn') ? 99 : 6; // あなたの番に置き場所を全部消すことはしない
+    else sc += clamp(after - now, -2, 2) * 0.4;
+  }
+  const w0 = countOn(g, WHITE), b0 = countOn(g, BLACK), lead = w0 - b0;
+  if (Math.abs(lead) >= 3) { const trail = lead > 0 ? BLACK : WHITE; sc += (countOn(h, trail) - countOn(g, trail)) * Math.min(1.5, Math.abs(lead) / 5); }
+  let nb = 0; for (const [dr, dc] of DIRS) { const r = d.r + dr, c = d.c + dc; if (inB(r, c) && h[r][c] && !(r === cat.r && c === cat.c)) nb++; }
+  sc += Math.min(nb, 4) * 0.3;
+  if (isCorner(d.r, d.c)) sc -= 2;
+  if (cat.prev && cat.prev.r === d.r && cat.prev.c === d.c) sc -= 0.5;
+  return sc;
+}
+function canWander(cat) {
+  if (cat.lure && cat.lure.steps > 0 && S.time < cat.lure.until) return true;
+  if (S.mode === 'play') {
+    if (isCorner(cat.r, cat.c)) return false;
+    if ((cat.restUntil || 0) > S.turnNo) return false;
+    if (isEdge(cat.r, cat.c) && Math.random() < 0.5) return false;
+  }
+  return true;
+}
+function freeDests(cat) {
+  const opts = [];
+  for (const [dr, dc] of DIRS) {
+    const r = cat.r + dr, c = cat.c + dc;
+    if (!inB(r, c) || cell[r][c] || resv[r][c]) continue;
+    if (dr && dc && crossing(cat.r, cat.c, r, c)) continue;
+    opts.push({ r, c });
+  }
+  return opts;
+}
+function softPick(opts, scores) {
+  const m = Math.max(...scores), w = scores.map((v) => Math.exp((v - m) / DIR_TEMP)), sum = w.reduce((a, b) => a + b, 0);
+  let x = Math.random() * sum; for (let i = 0; i < opts.length; i++) { x -= w[i]; if (x <= 0) return opts[i]; } return opts[opts.length - 1];
+}
+/** 置ける場所がない side のために、置き場所を作れる猫を1匹歩かせる */
+function rescue(side) {
+  const g = gridNow(); const cands = [], scores = [];
+  for (const cat of S.cats) {
+    if (cat.mode !== 'idle') continue;
+    for (const d of freeDests(cat)) {
+      const after = movesOn(gridAfterWalk(g, cat, d), side, cat); if (!after) continue;
+      cands.push({ cat, d }); scores.push(after * 0.5 - (isCorner(cat.r, cat.c) ? 3 : 0) - ((cat.restUntil || 0) > S.turnNo ? 1 : 0));
+    }
+  }
+  if (!cands.length) return false;
+  const ch = softPick(cands, scores);
+  ch.cat.sleeping = false; ch.cat.busyUntil = 0; ch.cat.rescue = true; startWalk(ch.cat, ch.d, 0.45);
+  return true;
+}
 function pickDest(cat) {
   const opts = [];
   for (const [dr, dc] of DIRS) {
@@ -756,29 +841,37 @@ function pickDest(cat) {
     for (const o of opts) { const d = Math.hypot(o.r - L.r, o.c - L.c); if (d < bd) { bd = d; best = o; } }
     return best ? best : 'wait';
   }
-  if (cat.prev && opts.length > 1 && Math.random() < 0.6) {
-    const f = opts.filter((o) => !(o.r === cat.prev.r && o.c === cat.prev.c)); if (f.length) return pick(f);
-  }
-  return pick(opts);
+  if (S.mode !== 'play') return pick(opts);
+  const g = gridNow(), side = nextSide(), base = side ? movesOn(g, side, null) : 0;
+  const scores = opts.map((d) => directorScore(cat, d, g, base, side));
+  const ok = opts.filter((_, i) => scores[i] > -50), okS = scores.filter((v) => v > -50);
+  if (!ok.length) return null;
+  return softPick(ok, okS);
 }
 function tryWalk(cat) {
-  const cap = Math.max(2, Math.ceil(S.cats.length / 3));
-  if (walkerList().length >= cap) { cat.nextWalk = S.time + rnd(0.3, 0.8); return; }
+  let cap = Math.max(2, Math.ceil(S.cats.length / 3));
+  if (S.mode === 'play' && S.phase === 'turn' && S.turn === WHITE) cap = 1; // 考えている間は盤面を落ち着かせる
+  if (walkerList().length >= cap) { cat.nextWalk = S.time + rnd(0.5, 1.2); return; }
+  if (!canWander(cat)) { cat.nextWalk = S.time + rnd(1.5, 3); return; }
   const d = pickDest(cat);
   if (d === 'wait') { cat.nextWalk = S.time + 0.5; if (cat.curName !== 'crouch') playAnim(cat, 'crouch'); cat.nextAnim = S.time + 1.5; return; }
   if (!d) { cat.nextWalk = S.time + rnd(0.8, 1.8); return; }
+  startWalk(cat, d);
+}
+function startWalk(cat, d, alertTime) {
   cat.dest = { r: d.r, c: d.c }; resv[d.r][d.c] = cat;
   cat.targetYaw = Math.atan2(cellX(d.c) - cat.x, cellZ(d.r) - cat.z);
   const diag = d.r !== cat.r && d.c !== cat.c;
   cat.gait = Math.random() < (cat.lure ? 0.8 : 0.25) ? 'trot' : 'walk';
   if (!cat.lure && Math.random() < 0.1) cat.gait = 'run';
   cat.speed = cat.gait === 'run' ? 3.0 : (cat.gait === 'trot' ? 1.9 : 1.0);
-  cat.mode = 'alert'; cat.timer = cat.lure ? 0.5 : (cat.gait === 'run' ? 0.4 : 0.95); cat.wig = 0;
+  cat.mode = 'alert'; cat.timer = alertTime != null ? alertTime : (cat.lure ? 0.5 : (cat.gait === 'run' ? 0.4 : 0.95)); cat.wig = 0;
   playAnim(cat, 'crouch', { fade: 0.15 }); cat.sleeping = false;
 }
 const wander = (a, b) => rnd(a, b) * clamp(16 / Math.max(4, S.cats.length), 1, 2.6); // 猫が少ない序盤はのんびり
 function arrive(cat) {
   const d = cat.dest;
+  cat.rescue = false;
   cell[cat.r][cat.c] = null; cat.prev = { r: cat.r, c: cat.c }; cat.r = d.r; cat.c = d.c; cell[d.r][d.c] = cat; resv[d.r][d.c] = null; cat.dest = null;
   cat.x = cellX(d.c); cat.z = cellZ(d.r);
   cat.mode = 'idle'; chooseIdle(cat, { noSleep: Math.random() < 0.5 }); cat.nextWalk = S.time + wander(1.0, 3.0);
@@ -915,9 +1008,9 @@ function afterBoardChange() {
   else if (S.phase !== 'ending' && S.phase !== 'over' && total >= N * N) beginEnding();
 }
 function startTurn(color) {
-  S.phase = 'turn'; S.turn = color; S.timeLeft = TURN_TIME; clearSel(); S.noMoveT = 0;
+  S.phase = 'turn'; S.turn = color; S.timeLeft = TURN_TIME; clearSel(); S.noMoveT = 0; S.turnNo++; S.rescueTries = 0; S.rescueWait = false;
   const moves = validMoves(color);
-  if (!moves.length) { doPass(color); return; }
+  if (!moves.length) { if (S.moveEnabled && rescue(color)) { S.rescueWait = true; S.rescueTries = 1; } else { doPass(color); return; } }
   if (color === BLACK) {
     S.cpuAt = S.time + rnd(1.3, 2.6);
     S.cpuToyAt = (S.toyLeft[BLACK] > 0 && Math.random() < 0.4) ? S.time + rnd(0.3, 1.0) : -1;
@@ -939,7 +1032,8 @@ function place(color, r, c) {
   resv[r][c] = null;
   const cat = spawnCat(color, r, c, 2.2);
   if (!cat) return false;
-  applyFlips(fl, r, c, 0.5);
+  cat.restUntil = S.turnNo + 2;
+  applyFlips(fl, r, c, 0.5, 'place');
   S.moveEnabled = true; // 最初の1手が置かれたら、猫たちが歩き出す
   S.passes = 0; S.phase = 'gap'; S.gapT = 1.25; S.nextTurn = other(color); clearSel();
   return true;
@@ -982,7 +1076,7 @@ function startGame() {
   for (const t of S.toys.slice()) removeToy(t);
   for (const cat of S.cats.slice()) releaseCat(cat);
   for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { cell[r][c] = null; resv[r][c] = null; }
-  S.attract = false; S.mode = 'play'; S.phase = 'gap'; S.gapT = 2.3; S.nextTurn = WHITE; S.passes = 0; S.moveEnabled = false;
+  S.attract = false; S.turnNo = 0; S.rescueWait = false; S.mode = 'play'; S.phase = 'gap'; S.gapT = 2.3; S.nextTurn = WHITE; S.passes = 0; S.moveEnabled = false;
   S.toyLeft = { 1: TOY_MAX, 2: TOY_MAX }; S.toyCool = { 1: 0, 2: 0 }; S.toyMode = false; S.sel = null; S.yaw = 0; S.pitch = 0;
   S.paused = false; S.events = [];
   const mid = N / 2;
@@ -1259,11 +1353,24 @@ function simulate(dt) {
   if (S.phase === 'gap') {
     S.gapT -= dt; if (S.gapT <= 0 && S.cats.every((c) => c.mode !== 'drop')) startTurn(S.nextTurn);
   } else if (S.phase === 'turn') {
+    if (S.rescueWait) {
+      // 監督が置き場所を作っている間は時間を止める
+      if (S.cats.some((c) => c.rescue)) return;
+      S.rescueWait = false;
+      if (!validMoves(S.turn).length) {
+        if (S.rescueTries < 3 && rescue(S.turn)) { S.rescueWait = true; S.rescueTries++; return; }
+        doPass(S.turn); return;
+      }
+      S.timeLeft = Math.max(S.timeLeft, TURN_TIME * 0.7); if (S.turn === BLACK) S.cpuAt = S.time + rnd(0.8, 1.6);
+    }
     S.timeLeft -= dt;
     S.noMoveT += dt;
     if (S.noMoveT > 0.5) {
       S.noMoveT = 0;
-      if (!S.sel && !validMoves(S.turn).length) { doPass(S.turn); return; }
+      if (!S.sel && !validMoves(S.turn).length) {
+        if (S.moveEnabled && S.rescueTries < 3 && rescue(S.turn)) { S.rescueWait = true; S.rescueTries++; return; }
+        doPass(S.turn); return;
+      }
     }
     if (S.turn === WHITE) {
       if (S.timeLeft <= 3 && Math.ceil(S.timeLeft + dt) !== Math.ceil(S.timeLeft)) Snd.sfx.tick();
