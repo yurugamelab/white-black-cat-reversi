@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#ffe3ec">
 <title>白猫vs黒猫リバーシ</title>
-<meta name="description" content="生きている白猫vs黒猫の駒でリバーシ。猫は勝手に歩き回って、動くたびにひっくり返る！猫じゃらしで相手を誘導しよう。">
+<meta name="description" content="生きている白猫vs黒猫の駒でリバーシ。猫は勝手に歩き回って、盤面がどんどん変わる！猫じゃらしで相手を誘導しよう。">
 <meta property="og:title" content="白猫vs黒猫リバーシ">
 <meta property="og:description" content="猫が勝手に動き回る、ゆるくてかわいいリバーシ。">
 <meta property="og:type" content="website">
@@ -197,7 +197,7 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
     <div class="logo">
       <div class="l1"><b>白猫</b> vs <span class="bk">黒猫</span></div>
       <div class="l2">リバーシ</div>
-      <div class="sub">猫が勝手に動いて、ひっくり返る！</div>
+      <div class="sub">猫が勝手に歩く、ゆるいリバーシ！</div>
     </div>
     <div class="titleBottom">
       <div id="titleBest"></div>
@@ -228,7 +228,7 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
       <div class="slide">
         <h3>② 猫は勝手に動く！</h3>
         <div class="mini" style="grid-template-columns:repeat(4,44px)"><i class="w"></i><i class="b"></i><i class="w arrow"></i><i></i></div>
-        <p>猫は<b>気ままに歩き回る</b>よ。<br>歩いた猫がはさむと<b>勝手にひっくり返る</b>！<br><b style="color:#f0789a">ピンクの肉球</b>が置ける場所のヒント。<br>1手は<b>10秒</b>。時間切れはパスになるよ。</p>
+        <p>猫は<b>気ままに歩き回る</b>よ。<br>歩いて並びが変わると、<b>置ける場所</b>も変わる！<br>ひっくり返るのは<b>置いたとき</b>だけ。<br><b style="color:#f0789a">ピンクの肉球</b>が置ける場所のヒント。<br>1手は<b>10秒</b>。時間切れはパスになるよ。</p>
       </div>
       <div class="slide">
         <h3>③ 猫じゃらしで誘導</h3>
@@ -698,7 +698,7 @@ function renderPick() {
     const ok = have.includes(k) && !clash;
     const b = document.createElement('button');
     b.className = 'pickCard' + (SKINS[k].light ? '' : ' dark') + (k === cur ? ' sel' : '') + (ok ? '' : ' locked');
-    b.innerHTML = catFaceSVG(k, !have.includes(k)) + `<b>${have.includes(k) ? SKINS[k].name : '？？？'}</b><span>${clash ? '相手と見分けにくいよ' : ok ? (o ? o.name + 'だった猫' : (k === 'white' ? 'ふわふわ・おっとり' : 'つやつや・きまぐれ')) : (o ? o.name + 'に勝つと' : '')}</span>`;
+    b.innerHTML = catFaceSVG(k, !have.includes(k)) + `<b>${have.includes(k) ? SKINS[k].name : '？？？'}</b><span>${clash ? '相手と見分けにくいよ' : ok ? (o ? o.name + 'だった猫' : '') : (o ? o.name + 'に勝つと' : '')}</span>`;
     b.onclick = () => { if (!ok) { Snd.sfx.cancel(); return; } choose(k); };
     row.appendChild(b);
   }
@@ -996,9 +996,7 @@ const isEdge = (r, c) => r === 0 || r === N - 1 || c === 0 || c === N - 1;
 function gridNow() { const g = []; for (let r = 0; r < N; r++) { const row = []; for (let c = 0; c < N; c++) row.push(colorAt(r, c)); g.push(row); } return g; }
 function countOn(h, color) { let n = 0; for (const row of h) for (const v of row) if (v === color) n++; return n; }
 function gridAfterWalk(g, cat, d) {
-  const h = g.map((row) => row.slice()); h[cat.r][cat.c] = 0; h[d.r][d.c] = cat.color;
-  const fl = scanFlips((a, b) => h[a][b], d.r, d.c, cat.color);
-  if (fl.length && fl.length < countOn(h, other(cat.color))) for (const [a, b] of fl) h[a][b] = cat.color;
+  const h = g.map((row) => row.slice()); h[cat.r][cat.c] = 0; h[d.r][d.c] = cat.color; // 歩いてもひっくり返らない
   return h;
 }
 function movesOn(h, color, self) {
@@ -1125,12 +1123,7 @@ function arrive(cat) {
   cat.x = cellX(d.c); cat.z = cellZ(d.r);
   cat.mode = 'idle'; chooseIdle(cat, { noSleep: Math.random() < 0.5 }); cat.nextWalk = S.time + wander(1.0, 3.0) * (S.mode === 'play' && cat.color === S.cpu ? CFG.oppWalkMul : 1);
   if (cat.lure) { cat.lure.steps--; cat.nextWalk = S.time + rnd(0.1, 0.4); }
-  let fl = scanFlips(colorAt, d.r, d.c, cat.color);
-  counts(); if (fl.length >= S.counts[other(cat.color)]) fl = []; // 歩いただけで相手が全滅はしない（やさしさ）
-  if (fl.length) {
-    applyFlips(fl, d.r, d.c, 0.08);
-    hearts(cat.x, 0.7, cat.z, 2);
-  }
+  // 歩いて着いただけでは、相手はひっくり返さない（ひっくり返るのはコマを置いたときだけ）
   afterBoardChange();
 }
 
@@ -1559,7 +1552,7 @@ function startFlow() {
   Snd.init(); Snd.sfx.ui();
   S.pickFor = ''; S.opp = null; openPick();
 }
-function openPick() { hide('title'); hide('vs'); show('pick'); S.mode = 'pick'; renderPick(); $('pickNote').textContent = S.pickFor === 'vs' ? '使う猫をえらんでね' : '選んだ猫があなたの仲間。あなたが先に置くよ。'; }
+function openPick() { hide('title'); hide('vs'); show('pick'); S.mode = 'pick'; renderPick(); $('pickNote').textContent = (S.pickFor === 'vs' ? '使う猫をえらんでね。' : '選んだ猫があなたの仲間。あなたが先に置くよ。') + '強さはどの猫も同じ、見た目だけのちがいだよ。'; }
 function choose(k) {
   Snd.sfx.meow(SKINS[k].light ? 1.3 : 0.8, 0.28); store.set('mySkin', k); hide('pick');
   if (S.pickFor === 'vs') { openVs(S.vsIdx); return; }
