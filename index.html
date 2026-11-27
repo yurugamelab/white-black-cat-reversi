@@ -1552,7 +1552,7 @@ function startFlow() {
   Snd.init(); Snd.sfx.ui();
   S.pickFor = ''; S.opp = null; openPick();
 }
-function openPick() { hide('title'); hide('vs'); show('pick'); S.mode = 'pick'; renderPick(); $('pickNote').textContent = (S.pickFor === 'vs' ? '使う猫をえらんでね。' : '選んだ猫があなたの仲間。あなたが先に置くよ。') + '強さはどの猫も同じ、見た目だけのちがいだよ。'; }
+function openPick() { hide('title'); hide('vs'); show('pick'); S.mode = 'pick'; renderPick(); $('pickNote').textContent = (S.pickFor === 'vs' ? '使う猫をえらんでね。' : '選んだ猫があなたの仲間。あなたが先に置くよ。'); }
 function choose(k) {
   Snd.sfx.meow(SKINS[k].light ? 1.3 : 0.8, 0.28); store.set('mySkin', k); hide('pick');
   if (S.pickFor === 'vs') { openVs(S.vsIdx); return; }
