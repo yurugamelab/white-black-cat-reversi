@@ -505,7 +505,6 @@ const TOY_MAX = 3;           // 猫じゃらしの回数
 const TOY_DUR = 4.5;         // 猫じゃらしが出ている時間
 const TOY_RADIUS = 2;        // 誘導できる距離（マス）
 const TOY_STEPS = 3;
-const BIG_FLIP = 5;          // この数以上ひっくり返ると派手な演出         // 最大何マス歩くか
 const CAT_SCALE = 2.0;
 const CAT_YAW = 0;
 const HALF = N / 2;
@@ -747,11 +746,6 @@ function spawnCat(color, r, c, height) {
 function scheduleFlip(cat, delay) { cat.flip = { delay, t: 0, swapped: false }; }
 function applyFlips(list, fr, fc, baseDelay, kind) {
   let i = 0;
-  if (list.length >= BIG_FLIP && (S.mode === 'play')) {
-    const n = list.length;
-    schedule(baseDelay + 0.1, () => { showBanner(`${n}匹 ごろごろ！`, 'combo', 1.8); S.slowT = 1.3; });
-    for (let k = 0; k < Math.min(n, 6); k++) schedule(baseDelay + 0.35 + k * 0.16, () => Snd.sfx.meow(0.9 + k * 0.08, 0.16));
-  }
   for (const [r, c] of list) {
     const cat = cell[r][c]; if (!cat) continue;
     cat.color = cell[fr][fc].color;
