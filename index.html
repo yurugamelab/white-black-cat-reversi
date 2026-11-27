@@ -93,9 +93,10 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
 @keyframes bump{50%{transform:scale(1.35)}}
 .mid{flex:1;max-width:240px;display:flex;flex-direction:column;align-items:center;gap:5px;padding-top:3px}
 .turn{font-size:15px;font-weight:900;padding:3px 14px;border-radius:999px;background:#fff;box-shadow:0 3px 0 rgba(150,120,140,.16)}
-.turn.me{background:var(--pink-d);color:#fff}.turn.cpu{background:#4a4452;color:#fff}.turn.end{background:var(--mint-d);color:#fff}
+.turn.me{background:var(--pink-d);color:#fff}.turn.cpu{background:#4a4452;color:#fff}.turn.tw{background:#fff;color:var(--ink);box-shadow:0 0 0 2px #e5c3cf}.turn.tb{background:#3d3746;color:#fff}.turn.end{background:var(--mint-d);color:#fff}
 .timer{position:relative;width:100%;height:16px;border-radius:9px;background:rgba(255,255,255,.9);box-shadow:inset 0 2px 3px rgba(0,0,0,.1);overflow:hidden}
 #timerFill{height:100%;width:100%;background:linear-gradient(90deg,var(--mint),#ffd36e);transition:width .1s linear}
+#timerFill.w{background:#fff;box-shadow:inset 0 0 0 2px #e5c3cf}#timerFill.b{background:#3d3746}
 #timerFill.warn{background:linear-gradient(90deg,#ff7a8a,#ff5470);animation:blink .4s infinite alternate}
 @keyframes blink{to{filter:brightness(1.15)}}
 #timerText{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:var(--ink)}
@@ -116,6 +117,8 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
 #banner.combo{top:34%;font-size:clamp(44px,13vw,76px);color:#fff6b0;text-shadow:0 4px 0 #ff6f98,3px 4px 0 #ff6f98,-3px 4px 0 #ff6f98,0 0 24px rgba(255,200,80,.8),0 10px 24px rgba(160,80,110,.4)}
 #banner.sm{top:calc(env(safe-area-inset-top) + 150px);font-size:clamp(26px,7.5vw,40px)}
 #banner.sm.me{color:#fff;text-shadow:0 3px 0 var(--pink-d),2px 3px 0 var(--pink-d),-2px 3px 0 var(--pink-d),0 8px 16px rgba(160,80,110,.3)}
+#banner.sm.wt{color:#fff;text-shadow:0 3px 0 #b9a7b2,2px 3px 0 #b9a7b2,-2px 3px 0 #b9a7b2,0 8px 16px rgba(80,60,80,.3)}
+#banner.sm.bt{color:#3d3746;text-shadow:0 3px 0 #fff,2px 3px 0 #fff,-2px 3px 0 #fff,0 8px 16px rgba(60,40,80,.3)}
 #banner.sm.cpu{color:#fff;text-shadow:0 3px 0 #5b4d9a,2px 3px 0 #5b4d9a,-2px 3px 0 #5b4d9a,0 8px 16px rgba(60,40,120,.35)}
 #bigCount{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);font-size:clamp(120px,38vw,200px);font-weight:900;color:rgba(255,61,102,.5);text-shadow:0 0 0 #fff,0 6px 0 rgba(255,255,255,.5);pointer-events:none;opacity:0;z-index:14}
 #bigCount.on{opacity:1}
@@ -196,7 +199,7 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
       <div class="slide">
         <h3>① 置いて、はさむ</h3>
         <div class="mini" style="grid-template-columns:repeat(4,44px)"><i class="b"></i><i class="w"></i><i class="tap"></i><i></i></div>
-        <p>マスを<b>タップ</b>で選ぶと、ひっくり返る猫が光るよ。<br><b>もう一度タップ</b>で置く！<br>盤面の縁が<b style="color:#f0789a">ピンク</b>なら あなたの番、<b style="color:#6f5fc0">むらさき</b>なら相手の番。</p>
+        <p>マスを<b>タップ</b>すると置けるよ！<br>自分の猫で相手の猫をはさもう。<br>時間のバーが<b>白</b>なら白ねこの番、<b>黒</b>なら黒ねこの番。</p>
       </div>
       <div class="slide">
         <h3>② 猫は勝手に動く！</h3>
@@ -1099,10 +1102,10 @@ function startTurn(color) {
   updateHudTurn();
   if (S.attract) return;
   if (color === S.me) {
-    showBanner('あなたの番！', 'sm me', 1.1); Snd.sfx.meow(1.3, 0.22);
+    showBanner('あなたの番！', color === WHITE ? 'sm wt' : 'sm bt', 1.1); Snd.sfx.meow(1.3, 0.22);
     if (S.turnNo >= 3 && !store.get('toyTip', false)) { store.set('toyTip', true); schedule(1.2, () => showToast('空いているマスを長押しで 猫じゃらし！', 2.6)); }
   }
-  else { showBanner(CAT_NAME[S.cpu] + 'の番', 'sm cpu', 1.1); Snd.sfx.meow(0.78, 0.25); }
+  else { showBanner(CAT_NAME[S.cpu] + 'の番', color === WHITE ? 'sm wt' : 'sm bt', 1.1); Snd.sfx.meow(0.78, 0.25); }
 }
 function doPass(color) {
   S.passes++;
@@ -1230,14 +1233,8 @@ function clearSel() {
 function onTapCell(r, c) {
   if (S.mode !== 'play' || S.phase !== 'turn' || S.turn !== S.me || S.paused) return;
   if (S.toyMode) { if (useToy(S.me, r, c)) { S.toyMode = false; updateToyUI(); } return; }
-  if (S.sel && S.sel.r === r && S.sel.c === c) {
-    if (place(S.me, r, c)) { /* 置いた */ } else { clearSel(); Snd.sfx.cancel(); }
-    return;
-  }
-  if (!cell[r][c] && !resv[r][c]) {
-    const fl = scanFlips(colorAt, r, c, S.me);
-    if (fl.length && !spareRule(S.me, fl)) { clearSel(); S.sel = { r, c }; resv[r][c] = 'sel'; Snd.sfx.select(); return; }
-  }
+  // タップ1回で置く（2回タップの間に猫が動くストレスをなくす）
+  if (!cell[r][c] && !resv[r][c] && place(S.me, r, c)) return;
   Snd.sfx.cancel();
 }
 function updatePreview() {
@@ -1261,8 +1258,8 @@ function updateHudTurn() {
   const el = $('turnLabel');
   if (S.phase === 'reveal') { el.textContent = '結果発表！'; el.className = 'turn end'; }
   else if (S.phase === 'ending' || S.phase === 'over') { el.textContent = 'おわり！'; el.className = 'turn end'; }
-  else if (S.turn === S.me && S.phase === 'turn') { el.textContent = 'あなたの番'; el.className = 'turn me'; }
-  else if (S.phase === 'turn') { el.textContent = CAT_NAME[S.cpu] + 'の番'; el.className = 'turn cpu'; }
+  else if (S.turn === S.me && S.phase === 'turn') { el.textContent = 'あなたの番'; el.className = 'turn ' + (S.turn === WHITE ? 'tw' : 'tb'); }
+  else if (S.phase === 'turn') { el.textContent = CAT_NAME[S.cpu] + 'の番'; el.className = 'turn ' + (S.turn === WHITE ? 'tw' : 'tb'); }
   $('sbW').classList.toggle('on', S.phase === 'turn' && S.turn === WHITE); $('sbB').classList.toggle('on', S.phase === 'turn' && S.turn === BLACK);
 }
 let lastHint = '';
@@ -1275,7 +1272,7 @@ function updateHud() {
   if ($('scW').textContent !== tw) { $('scW').textContent = tw; bump($('scW')); }
   if ($('scB').textContent !== tb) { $('scB').textContent = tb; bump($('scB')); }
   const k = clamp(S.timeLeft / TURN_TIME, 0, 1);
-  const fill = $('timerFill'); fill.style.width = (S.phase === 'turn' ? k * 100 : 100) + '%';
+  const fill = $('timerFill'); fill.classList.toggle('w', S.turn === WHITE); fill.classList.toggle('b', S.turn === BLACK); fill.style.width = (S.phase === 'turn' ? k * 100 : 100) + '%';
   fill.classList.toggle('warn', S.phase === 'turn' && S.turn === S.me && S.timeLeft <= 3);
   $('timerText').textContent = S.phase === 'turn' ? Math.ceil(Math.max(0, S.timeLeft)) : '';
   let hint;
@@ -1283,8 +1280,7 @@ function updateHud() {
   else if (S.phase === 'ending') hint = '猫たちが落ち着くまで ちょっと待ってね…';
   else if (S.toyMode) hint = '猫じゃらしを使うマスをタップ（相手の猫が寄ってくるよ）';
   else if (S.phase === 'turn' && S.turn === S.cpu) hint = CAT_NAME[S.cpu] + 'が考え中…（猫じゃらしはいつでも使えるよ）';
-  else if (S.sel) hint = `ひっくり返る猫は ${S.previewCats.length}匹！ もう一度タップで置く`;
-  else hint = 'マスをタップして選ぶ → もう一度タップで置く';
+  else hint = 'マスをタップして置く（長押しで猫じゃらし）';
   if (hint !== lastHint) { $('hint').textContent = hint; lastHint = hint; }
 }
 function bump(el) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
@@ -1440,7 +1436,6 @@ function fitCamera() {
 }
 function updateCamera(dt) {
   S.camIdle += dt;
-  if (!down || !down.moved) { if (S.camIdle > 2.2) { S.yaw *= Math.pow(0.02, dt); S.pitch *= Math.pow(0.02, dt); } }
   camera.position.copy(camPos(S.camDist, S.yaw, BASE_EL + S.pitch)); camera.lookAt(0, 0, 0);
 }
 window.addEventListener('resize', () => { fitCamera(); });
@@ -1566,12 +1561,12 @@ function updateVisuals(dt) {
   if (gc) { animToy(ghostToy, cellX(gc.c), cellZ(gc.r), performance.now() / 1000); toyRange.position.x = cellX(gc.c); toyRange.position.z = cellZ(gc.r); }
   // 手番の縁の色と時間ゲージ
   const inTurn = S.mode === 'play' && S.phase === 'turn';
-  const tgt = inTurn ? (S.turn === S.me ? 0xff9fc0 : 0x8a78c8) : 0x8fd6a6;
+  const tgt = 0x8fd6a6; // 縁は緑のまま。手番はゲージの色（白/黒）で示す
   window.__frame.material.color.lerp(rimTmp.setHex(tgt), Math.min(1, dt * 8));
   gaugeMesh.visible = inTurn;
   if (inTurn) {
     const p = clamp(S.timeLeft / TURN_TIME, 0, 1), low = S.turn === S.me && S.timeLeft <= 3;
-    const col = S.turn === S.cpu ? '#6f5fc0' : (low ? '#ff3d66' : (p < 0.5 ? '#ffb347' : '#ff7fa8'));
+    const col = low ? '#ff3d66' : (S.turn === WHITE ? '#ffffff' : '#3d3746');
     drawGauge(p, col, low ? (0.6 + 0.4 * Math.abs(Math.sin(performance.now() / 120))) : 1);
   }
   const bc = $('bigCount'), showBig = false;
