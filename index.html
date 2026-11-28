@@ -1894,7 +1894,7 @@ if (!APP_URL) $('appBtn').innerHTML = '📱 アプリ版をダウンロード<sm
 async function shareResult() {
   const sh = S.share; if (!sh) return;
   const verdict = sh.win ? '勝った' : (sh.draw ? '引き分けた' : '負けた');
-  const text = `白猫vs黒猫リバーシで ${sh.my}対${sh.opp} で${verdict}！「${sh.line}」\n#白猫vs黒猫リバーシ #ゆるゲー研究所`;
+  const text = `白猫vs黒猫リバーシで ${sh.my}対${sh.opp} で${verdict}！「${sh.line}」\n#白猫vs黒猫リバーシ #ゆるゲー紹介屋さん`;
   try {
     renderer.render(scene, camera);
     const w = canvas.width, h = canvas.height, c2 = document.createElement('canvas'); c2.width = w; c2.height = h;
