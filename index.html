@@ -63,7 +63,12 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
 .node.current{box-shadow:0 0 0 3px var(--pink-d),0 6px 0 rgba(240,120,154,.3);animation:npulse 1s infinite alternate}
 @keyframes npulse{to{transform:scale(1.03)}}.node.current small{color:var(--pink-d)}
 .node.cleared small{color:var(--mint-d)}.node.locked{background:#ece6ea;color:#a597a0}
-#sugoDone{font-size:16px;font-weight:900;color:var(--pink-d)}
+#sugoDone{font-size:16px;font-weight:900;color:var(--pink-d);background:#fff;border-radius:999px;padding:8px 18px;box-shadow:0 4px 0 rgba(150,120,140,.18)}
+#award{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(255,240,245,.6);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);z-index:40}
+.awardCard{width:min(84vw,330px);background:#fffdf6;border:8px double #d9a441;border-radius:14px;padding:22px 16px;text-align:center;color:#5b4650;box-shadow:0 10px 30px rgba(120,80,100,.25)}
+.awardCard .t{font-size:30px;font-weight:900;letter-spacing:.3em;color:#b07a1e}.awardCard .me{display:flex;justify-content:center;gap:4px;margin:8px 0}.awardCard .me svg{width:56px;height:56px}
+.awardCard .to{font-size:18px;font-weight:900}.awardCard .body{margin:12px 0;font-size:15px;line-height:1.8;font-weight:700}.awardCard .body b{color:#e0708f}
+.awardCard .faces svg{width:40px;height:40px}.awardCard .date{margin-top:10px;font-size:13px}.awardCard .sign{margin-top:6px;font-size:13px;font-weight:800}
 .vsCard{width:min(90vw,380px);background:#fff;border-radius:30px;padding:20px 18px;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
 #vsFace svg{width:110px;height:110px}#vsName{margin:0;font-size:28px;font-weight:900}#vsTrait{font-size:13px;font-weight:800;color:var(--ink-s)}
 #vsLine{font-size:18px;font-weight:900;color:var(--pink-d)}
@@ -271,11 +276,22 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
     </div>
   </div>
 
+  <div id="award" class="layer hidden">
+    <div class="awardCard">
+      <div class="t">賞状</div>
+      <div class="me" id="awardMe"></div>
+      <div class="body">あなたは 個性ゆたかな<br>5匹のライバル猫に ぜんぶ勝ち<br>みごと <b>チャレンジを完走</b> しました<br>ここに その健闘をたたえます</div>
+      <div class="faces" id="awardFaces"></div>
+      <div class="date" id="awardDate"></div>
+      <div class="sign">ねこ協会 会長 ボス猫 🐾</div>
+    </div>
+    <button class="btn ghost sm" id="awardClose" style="width:auto">とじる</button>
+  </div>
   <div id="sugo" class="layer hidden">
     <h2>チャレンジ</h2>
     <p class="sugoLead">5匹の猫に勝って、チャレンジを完走しよう</p>
     <div id="sugoList"></div>
-    <div id="sugoDone" class="hidden">🎉 ぜんぶの猫に勝った！</div>
+    <button id="sugoDone" class="hidden">🎉 ぜんぶの猫に勝った！ 賞状を見る</button>
     <button class="btn ghost sm" id="sugoBack" style="width:auto">タイトルへ</button>
   </div>
 
@@ -592,7 +608,7 @@ function makeCatRig(colorKey) {
 /* 座る・寝るなどのアニメは体が浮いたり前後にずれたりするので、接地と位置の補正値をクリップごとに測っておく */
 const CLIP_OFF = {};
 function measureClipOffsets() {
-  const names = ['idle', 'idle2', 'idle3', 'sit', 'sit2', 'lick', 'lie', 'sleep', 'scratch', 'caress', 'crouch', 'walk', 'trot', 'run'];
+  const names = ['idle', 'idle2', 'idle3', 'sit', 'sit2', 'lick', 'lie', 'sleep', 'scratch', 'caress', 'crouch', 'walk', 'trot', 'run', 'hit', 'attack', 'jstart'];
   const rig = makeCatRig('white'), mesh = rig.mesh, pos = mesh.geometry.attributes.position, v = new THREE.Vector3();
   const meas = {};
   for (const name of names) {
@@ -627,15 +643,15 @@ const SKINS = {
 
 /** 相手猫5匹。cfg はこの相手と戦うときだけ変わる数値（CPUとねこ監督の性格） */
 const OPPONENTS = [
-  { id: 'nebosuke', skin: 'buchi',     name: 'ねぼすけ',     line: 'ねむい…お手やわらかに',   trait: 'よく寝る・のんびり',
+  { id: 'nebosuke', stage: 'engawa', skin: 'buchi',     name: 'ねぼすけ',     line: 'ねむい…お手やわらかに',   trait: 'よく寝る・のんびり',
     cfg: { cpuRandom: 0.6, oppSleep: 0.7, oppWalkMul: 1.6 } },
-  { id: 'yancha', skin: 'kijitora',    name: 'やんちゃ',     line: 'じっとしてられない！',     trait: '走り回る',
+  { id: 'yancha', stage: 'park', skin: 'kijitora',    name: 'やんちゃ',     line: 'じっとしてられない！',     trait: '走り回る',
     cfg: { oppWalkMul: 0.3, oppRun: 0.6, oppSleep: 0, cpuRandom: 0.25 } },
-  { id: 'otenba', skin: 'chatora',    name: 'おてんば',     line: 'ぴょーんって跳んでくよ！', trait: 'ぴょんと2マス跳ぶ',
+  { id: 'otenba', stage: 'roof', skin: 'chatora',    name: 'おてんば',     line: 'ぴょーんって跳んでくよ！', trait: 'ぴょんと2マス跳ぶ',
     cfg: { jumpP: 0.55, oppWalkMul: 0.8, cpuRandom: 0.2 } },
-  { id: 'daikazoku', skin: 'hachiware', name: '大家族',       line: 'うちは家族が多いのよ',     trait: '最初から10匹で始まる',
+  { id: 'daikazoku', stage: 'kitchen', skin: 'hachiware', name: '大家族',       line: 'うちは家族が多いのよ',     trait: '最初から10匹で始まる',
     cfg: { startFamily: true, cpuRandom: 0.2 } },
-  { id: 'boss', skin: 'sabi',          name: 'ボス猫',       line: 'この町の角はおれのもの',   trait: '角と辺を狙う最強の猫',
+  { id: 'boss', stage: 'alley', skin: 'sabi',          name: 'ボス猫',       line: 'この町の角はおれのもの',   trait: '角と辺を狙う最強の猫',
     cfg: { cpuRandom: 0.15, cornerBonus: 9, edgeBonus: 2, comeback: 1.5, cpuToyP: 0.5, startCorners: 4, oppScale: 1.3, napP: 0.2 } },
 ];
 
@@ -698,6 +714,16 @@ function openVs(i) {
 function renderVsMe() {
   const o = OPPONENTS[S.vsIdx]; const k = autoSkin(o.skin);
   $('vsMe').innerHTML = catFaceSVG(k) + `<span>あなたの猫：<b>${SKINS[k].name}</b></span>`;
+}
+
+/* ---- 完走の賞状（全員に勝ったとき・マップからいつでも見られる） ---- */
+function openAward() {
+  hide('sugo'); hide('result'); show('award'); S.mode = 'award';
+  $('awardMe').innerHTML = catFaceSVG('white') + catFaceSVG('black');
+  $('awardFaces').innerHTML = OPPONENTS.map((o) => catFaceSVG(o.skin)).join('');
+  const d = new Date(store.get('sugoDoneAt', Date.now()));
+  $('awardDate').textContent = `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+  Snd.sfx.win();
 }
 
 /* ---- Web版: すごろくの紹介 ---- */
@@ -778,7 +804,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.setClearColor(0x000000, 0);
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
-scene.add(new THREE.HemisphereLight(0xffffff, 0xf4e4ee, 2.8));
+const hemiLight = new THREE.HemisphereLight(0xffffff, 0xf4e4ee, 2.8); scene.add(hemiLight);
 const sun = new THREE.DirectionalLight(0xfff0dd, 2.2); sun.position.set(-3, 8, 5); scene.add(sun);
 
 function makeTex(size, draw) {
@@ -823,13 +849,46 @@ function roundedRect(w, h, r, hole) {
     }
   });
   const felt = new THREE.Mesh(new THREE.PlaneGeometry(N, N), new THREE.MeshLambertMaterial({ map: tex }));
-  felt.rotation.x = -Math.PI / 2; felt.position.y = 0.004; scene.add(felt);
+  felt.rotation.x = -Math.PI / 2; felt.position.y = 0.004; scene.add(felt); window.__felt = felt; window.__base = base; window.__grassTex = tex;
   // 床の影
   const sh = new THREE.Mesh(new THREE.PlaneGeometry(9.2, 9.2), new THREE.MeshBasicMaterial({
     map: makeTex(256, (g, s) => { const gr = g.createRadialGradient(s / 2, s / 2, s * 0.25, s / 2, s / 2, s / 2); gr.addColorStop(0, 'rgba(90,70,110,0.17)'); gr.addColorStop(1, 'rgba(90,70,110,0)'); g.fillStyle = gr; g.fillRect(0, 0, s, s); }),
     transparent: true, depthWrite: false }));
   sh.rotation.x = -Math.PI / 2; sh.position.y = -0.285; scene.add(sh);
 })();
+
+/* ===== 舞台（チャレンジは相手ごとに場所が変わる。フリー対戦は草原） ===== */
+const STAGES = {
+  grass:   { frame: 0xa3d98c, base: 0x8fca78, bg: 'linear-gradient(180deg,#ffe3ec 0%,#fff3e4 52%,#dff3e8 100%)', hemi: 2.8, sun: 2.2 },
+  engawa:  { frame: 0x9a6a44, base: 0x7b5236, bg: 'linear-gradient(180deg,#fff0d6 0%,#ffe6c4 55%,#f6d8b0 100%)', hemi: 2.9, sun: 2.4, // 縁側（日なたの木の床）
+    draw(g, s) { const cs = s / N; for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { g.fillStyle = (r + c) % 2 ? '#d9a877' : '#e3b585'; g.fillRect(c * cs, r * cs, cs, cs); }
+      for (let i = 0; i < 1400; i++) { const y = Math.random() * s; g.strokeStyle = Math.random() < 0.5 ? 'rgba(120,70,30,0.12)' : 'rgba(255,235,200,0.14)'; g.lineWidth = 2; g.beginPath(); g.moveTo(Math.random() * s, y); g.lineTo(Math.random() * s, y + (Math.random() - 0.5) * 6); g.stroke(); }
+      g.strokeStyle = 'rgba(110,65,30,0.45)'; g.lineWidth = 4; for (let i = 0; i <= N; i++) { g.beginPath(); g.moveTo(0, i * cs); g.lineTo(s, i * cs); g.stroke(); } } },
+  park:    { frame: 0xc9b38a, base: 0xa48b62, bg: 'linear-gradient(180deg,#cfeaff 0%,#e8f6ff 55%,#e3f3dc 100%)', hemi: 2.8, sun: 2.3, // 公園（芝生と砂の小道）
+    draw(g, s) { const cs = s / N; for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { g.fillStyle = (r + c) % 2 ? '#8fcf6e' : '#9fda7e'; g.fillRect(c * cs, r * cs, cs, cs); }
+      for (let i = 0; i < 22000; i++) { const x = Math.random() * s, y = Math.random() * s, l = 6 + Math.random() * 10; g.strokeStyle = Math.random() < 0.5 ? 'rgba(255,255,230,0.15)' : 'rgba(40,110,50,0.15)'; g.lineWidth = 2; g.beginPath(); g.moveTo(x, y); g.lineTo(x + (Math.random() - 0.5) * 5, y - l); g.stroke(); }
+      g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 3; for (let i = 0; i <= N; i++) { g.beginPath(); g.moveTo(i * cs, 0); g.lineTo(i * cs, s); g.stroke(); g.beginPath(); g.moveTo(0, i * cs); g.lineTo(s, i * cs); g.stroke(); } } },
+  roof:    { frame: 0x6f7f95, base: 0x55637a, bg: 'linear-gradient(180deg,#ffc9a8 0%,#ffe0c2 50%,#d9d6f0 100%)', hemi: 2.6, sun: 2.4, // 屋根の上（瓦）
+    draw(g, s) { const cs = s / N; for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { g.fillStyle = (r + c) % 2 ? '#8e9cb3' : '#9daac0'; g.fillRect(c * cs, r * cs, cs, cs);
+        for (let k = 0; k < 3; k++) { const y = r * cs + (k + 1) * cs / 3; g.strokeStyle = 'rgba(50,60,80,0.35)'; g.lineWidth = 4; g.beginPath(); for (let x = c * cs; x <= (c + 1) * cs; x += cs / 4) { g.moveTo(x, y); g.quadraticCurveTo(x + cs / 8, y - 14, x + cs / 4, y); } g.stroke(); } }
+      g.strokeStyle = 'rgba(40,48,64,0.55)'; g.lineWidth = 5; for (let i = 0; i <= N; i++) { g.beginPath(); g.moveTo(i * cs, 0); g.lineTo(i * cs, s); g.stroke(); g.beginPath(); g.moveTo(0, i * cs); g.lineTo(s, i * cs); g.stroke(); } } },
+  kitchen: { frame: 0xf2c6b4, base: 0xd9a48e, bg: 'linear-gradient(180deg,#fff8d8 0%,#fffbe9 55%,#f1f7e8 100%)', hemi: 2.9, sun: 2.0, // 台所（タイル）
+    draw(g, s) { const cs = s / N; for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { g.fillStyle = (r + c) % 2 ? '#bfe3d2' : '#f4efe2'; g.fillRect(c * cs, r * cs, cs, cs); }
+      g.strokeStyle = 'rgba(160,150,135,0.7)'; g.lineWidth = 6; for (let i = 0; i <= N; i++) { g.beginPath(); g.moveTo(i * cs, 0); g.lineTo(i * cs, s); g.stroke(); g.beginPath(); g.moveTo(0, i * cs); g.lineTo(s, i * cs); g.stroke(); } } },
+  alley:   { frame: 0x5b5470, base: 0x433d55, bg: 'linear-gradient(180deg,#2c2f5a 0%,#45457a 55%,#5d5a86 100%)', hemi: 2.1, sun: 1.6, // 夜の路地裏（石だたみ）
+    draw(g, s) { const cs = s / N; for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { g.fillStyle = (r + c) % 2 ? '#8d8aa3' : '#9b98b0'; g.fillRect(c * cs, r * cs, cs, cs);
+        for (let k = 0; k < 6; k++) { g.fillStyle = 'rgba(60,55,80,' + (0.08 + Math.random() * 0.08) + ')'; g.beginPath(); g.ellipse(c * cs + Math.random() * cs, r * cs + Math.random() * cs, 18 + Math.random() * 20, 12 + Math.random() * 12, Math.random() * 3, 0, 7); g.fill(); } }
+      g.strokeStyle = 'rgba(40,36,56,0.6)'; g.lineWidth = 6; for (let i = 0; i <= N; i++) { g.beginPath(); g.moveTo(i * cs, 0); g.lineTo(i * cs, s); g.stroke(); g.beginPath(); g.moveTo(0, i * cs); g.lineTo(s, i * cs); g.stroke(); } } },
+};
+const STAGE_TEX = { grass: window.__grassTex };
+let stageNow = 'grass';
+function applyStage(id) {
+  const st = STAGES[id] || STAGES.grass; stageNow = STAGES[id] ? id : 'grass';
+  if (!STAGE_TEX[stageNow]) STAGE_TEX[stageNow] = makeTex(1536, st.draw);
+  window.__felt.material.map = STAGE_TEX[stageNow]; window.__felt.material.needsUpdate = true;
+  window.__base.material.color.setHex(st.base); window.__frame.material.color.setHex(st.frame);
+  document.body.style.background = st.bg; hemiLight.intensity = st.hemi; sun.intensity = st.sun;
+}
 
 /* 盤面の縁の時間ゲージ */
 const gaugeCv = document.createElement('canvas'); gaugeCv.width = gaugeCv.height = 1024;
@@ -969,16 +1028,31 @@ function chooseIdle(cat, opt = {}) {
   if (opt.stand) kind = 'stand';
   else {
     const sleepP = (S.mode === 'play' && cat.color === S.cpu) ? CFG.oppSleep : 0.2, q = Math.random();
-    if (r < sleepP && !opt.noSleep) kind = 'sleep'; else if (q < 0.25) kind = 'lick'; else if (q < 0.375) kind = 'scratch'; else if (q < 0.625) kind = 'sit'; else kind = 'stand';
+    const buddy = cat.r >= 0 && !opt.noSleep ? sameNeighbor(cat) : null;
+    if (r < sleepP && !opt.noSleep) kind = 'sleep';
+    else if (buddy && Math.random() < 0.15) { kind = 'rub'; cat.buddy = buddy; }
+    else if (q < 0.1) kind = 'stretch';
+    else if (q < 0.25) kind = 'lick'; else if (q < 0.375) kind = 'scratch'; else if (q < 0.625) kind = 'sit'; else kind = 'stand';
   }
   cat.sleeping = false; cat.kind = kind;
   switch (kind) {
     case 'sleep': playAnim(cat, pick(['sleep', 'lie'])); cat.sleeping = true; cat.busyUntil = S.time + rnd(8, 14); cat.nextAnim = cat.busyUntil; break;
+    // 仲間とすりすり: 隣の同じ色の猫のほうを向いて顔をすり寄せる
+    case 'rub': { const b = cat.buddy; cat.targetYaw = cat.yaw = Math.atan2(b.x - cat.x, b.z - cat.z); playAnim(cat, 'caress'); cat.busyUntil = S.time + rnd(2.5, 4); cat.nextAnim = cat.busyUntil;
+      if (b.mode === 'idle' && !b.sleeping && Math.random() < 0.5) { b.targetYaw = b.yaw = Math.atan2(cat.x - b.x, cat.z - b.z); playAnim(b, 'caress'); b.busyUntil = Math.max(b.busyUntil, cat.busyUntil); b.nextAnim = b.busyUntil; }
+      break; }
+    // 伸び: ぐーっと前に伸びる
+    case 'stretch': playAnim(cat, 'jstart', { once: true, speed: 0.35, restart: true }); cat.busyUntil = S.time + 2.4; cat.nextAnim = cat.busyUntil; break;
     case 'lick': playAnim(cat, 'lick'); cat.busyUntil = S.time + rnd(4, 6.5); cat.nextAnim = cat.busyUntil; break;
     case 'scratch': playAnim(cat, 'scratch'); cat.busyUntil = S.time + rnd(3, 4.5); cat.nextAnim = cat.busyUntil; break;
     case 'sit': playAnim(cat, pick(['sit', 'sit2'])); cat.busyUntil = S.time + rnd(1.5, 3); cat.nextAnim = cat.busyUntil + rnd(0, 2); break;
     default: playAnim(cat, pick(['idle', 'idle2', 'idle3'])); cat.busyUntil = 0; cat.nextAnim = S.time + rnd(2, 4);
   }
+}
+function sameNeighbor(cat) {
+  const out = [];
+  for (const [dr, dc] of DIRS) { const r = cat.r + dr, c = cat.c + dc; if (!inB(r, c)) continue; const o = cell[r][c]; if (o && o !== cat && o.color === cat.color && o.mode === 'idle' && !o.flip) out.push(o); }
+  return out.length ? pick(out) : null;
 }
 function releaseCat(cat) {
   if (cat.r >= 0 && cell[cat.r][cat.c] === cat) cell[cat.r][cat.c] = null;
@@ -1185,14 +1259,20 @@ function turnBack(cat) {
   cat.targetYaw = Math.atan2(cellX(cat.c) - cat.x, cellZ(cat.r) - cat.z);
   if (cat.mode !== 'walk') { cat.mode = 'idle'; cat.dest = null; chooseIdle(cat); cat.nextWalk = S.time + rnd(1, 2); }
 }
+// じゃらしのすぐそばに着いたら、前足でちょいちょい猫パンチ
+function lurePaw(cat) {
+  const L = cat.lure; if (!L || Math.max(Math.abs(cat.r - L.r), Math.abs(cat.c - L.c)) > 1) return;
+  cat.targetYaw = cat.yaw = Math.atan2(cellX(L.c) - cat.x, cellZ(L.r) - cat.z);
+  playAnim(cat, 'attack', { once: true, fade: 0.1, restart: true }); cat.nextAnim = S.time + 1.2; cat.nextWalk = S.time + 1.3;
+}
 function arrive(cat) {
   const d = cat.dest;
   cat.rescue = false;
-  if (cat.r === d.r && cat.c === d.c) { cat.x = cellX(d.c); cat.z = cellZ(d.r); cat.dest = null; cat.mode = 'idle'; chooseIdle(cat, { noSleep: Math.random() < 0.5 }); cat.nextWalk = S.time + wander(1.0, 3.0) * (S.mode === 'play' && cat.color === S.cpu ? CFG.oppWalkMul : 1); if (cat.lure) { cat.lure.steps--; cat.nextWalk = S.time + rnd(0.1, 0.4); } afterBoardChange(); return; }
+  if (cat.r === d.r && cat.c === d.c) { cat.x = cellX(d.c); cat.z = cellZ(d.r); cat.dest = null; cat.mode = 'idle'; chooseIdle(cat, { noSleep: Math.random() < 0.5 }); cat.nextWalk = S.time + wander(1.0, 3.0) * (S.mode === 'play' && cat.color === S.cpu ? CFG.oppWalkMul : 1); if (cat.lure) { cat.lure.steps--; cat.nextWalk = S.time + rnd(0.1, 0.4); lurePaw(cat); } afterBoardChange(); return; }
   cell[cat.r][cat.c] = null; cat.prev = { r: cat.r, c: cat.c }; cat.r = d.r; cat.c = d.c; cell[d.r][d.c] = cat; resv[d.r][d.c] = null; cat.dest = null;
   cat.x = cellX(d.c); cat.z = cellZ(d.r);
   cat.mode = 'idle'; chooseIdle(cat, { noSleep: Math.random() < 0.5 }); cat.nextWalk = S.time + wander(1.0, 3.0) * (S.mode === 'play' && cat.color === S.cpu ? CFG.oppWalkMul : 1);
-  if (cat.lure) { cat.lure.steps--; cat.nextWalk = S.time + rnd(0.1, 0.4); }
+  if (cat.lure) { cat.lure.steps--; cat.nextWalk = S.time + rnd(0.1, 0.4); lurePaw(cat); }
   // 歩いて着いただけでは、相手はひっくり返さない（ひっくり返るのはコマを置いたときだけ）
   afterBoardChange();
 }
@@ -1257,7 +1337,9 @@ function updateCat(cat, dt) {
       f.t += dt; const u = clamp(f.t / 0.55, 0, 1);
       hop = Math.sin(u * Math.PI) * 0.6; spin = u * u * (3 - 2 * u) * Math.PI * 2;
       if (!f.swapped && u >= 0.5) { f.swapped = true; setCatColor(cat, cat.color); sparkles(cat.x, 0.9, cat.z, 3); }
-      if (u >= 1) { cat.flip = null; setCatColor(cat, cat.color); }
+      if (u >= 1) { cat.flip = null; setCatColor(cat, cat.color);
+        // 取られてびっくり: ぴょんと小さく跳ねて、きょとん
+        if (cat.mode === 'idle') { cat.bounce = 0.35; playAnim(cat, 'hit', { once: true, fade: 0.08, restart: true }); cat.sleeping = false; cat.nextAnim = S.time + 1.1; } }
     }
   }
   if (cat.bounce > 0) { cat.bounce -= dt; hop += Math.sin(Math.max(0, cat.bounce) / 0.35 * Math.PI) * 0.35; }
@@ -1437,7 +1519,7 @@ function showResult() {
     $('toTitleBtn').textContent = 'チャレンジへ';
     if (win) {
       S.sugoLoss[S.opp] = 0;
-      if (!isCleared(S.opp)) store.set('sugoCleared', sugoCleared().concat(o.id));
+      if (!isCleared(S.opp)) { store.set('sugoCleared', sugoCleared().concat(o.id)); if (nextOpp() === -1) { store.set('sugoDoneAt', Date.now()); S.awardPending = true; } }
       $('retryBtn').textContent = nextOpp() === -1 ? 'チャレンジへ' : 'つぎの相手へ';
     } else { S.sugoLoss[S.opp] = (S.sugoLoss[S.opp] || 0) + 1; $('retryBtn').textContent = 'もう一回にゃ'; }
   }
@@ -1467,14 +1549,14 @@ function startGame(opts = {}) {
   if (S.opp != null) mine = autoSkin(oppSkin); // すごろくは見分けやすい白か黒に自動で決まる
   S.collar = false;
   S.skin = { 1: mine, 2: oppSkin }; S.passes = 0; S.moveEnabled = false;
-  S.toyCool = { 1: 0, 2: 0 }; S.toyMode = false; S.sel = null; S.yaw = 0; S.pitch = 0;
+  S.toyCool = { 1: 0, 2: 0 }; S.toyMode = false; S.sel = null; S.yaw = 0; S.pitch = 0; resetZoom(); applyStage(S.opp != null ? OPPONENTS[S.opp].stage : 'grass');
   S.paused = false; S.events = [];
   const mid = N / 2;
   [[mid - 1, mid - 1, WHITE], [mid - 1, mid, BLACK], [mid, mid - 1, BLACK], [mid, mid, WHITE]].forEach(([r, c, col], i) => schedule(0.15 + i * 0.18, () => spawnCat(col, r, c, 2.4)));
   if (CFG.startFamily) [[1, 1], [1, 2], [1, 3], [1, 4], [2, 1], [3, 1], [4, 1], [4, 2], [2, 4], [4, 4]].forEach(([r, c], i) => schedule(0.9 + i * 0.12, () => spawnCat(S.cpu, r, c, 2.4))); // 大家族: 最初から相手だけ10匹多い
   if (CFG.startCorners) [[0, 0], [N - 1, N - 1], [0, N - 1], [N - 1, 0]].slice(0, CFG.startCorners === true ? 4 : CFG.startCorners).forEach(([r, c], i) => schedule(0.9 + i * 0.18, () => spawnCat(S.cpu, r, c, 2.4))); // ボス猫は最初から角を4つ持っている
   setReserve(innerHeight > innerWidth ? 150 : 84, innerHeight > innerWidth ? 175 : 96);
-  hide('title'); hide('howto'); hide('pick'); hide('result'); hide('pauseMenu'); hide('sugo'); hide('vs'); hide('sugoPreview'); show('hud');
+  hide('title'); hide('howto'); hide('pick'); hide('result'); hide('pauseMenu'); hide('sugo'); hide('vs'); hide('sugoPreview'); hide('award'); show('hud');
   $('youW').classList.remove('hidden'); $('youB').classList.add('hidden'); paintFaces();
   counts(); updateHudTurn(); updateToyUI();
   showBanner('スタート！'); Snd.sfx.start();
@@ -1484,12 +1566,12 @@ function goTitle() {
   for (const t of S.toys.slice()) removeToy(t);
   for (const cat of S.cats.slice()) releaseCat(cat);
   for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { cell[r][c] = null; resv[r][c] = null; }
-  hide('revealBox'); S.opp = null; S.skin = { 1: 'white', 2: 'black' }; CFG = Object.assign({}, DEF_CFG); S.mode = 'title'; S.phase = 'none'; S.attract = true; S.moveEnabled = true; S.paused = false; S.events = []; S.sel = null; S.toyMode = false; S.yaw = S.pitch = 0;
+  hide('revealBox'); S.opp = null; S.skin = { 1: 'white', 2: 'black' }; CFG = Object.assign({}, DEF_CFG); S.mode = 'title'; S.phase = 'none'; S.attract = true; S.moveEnabled = true; S.paused = false; S.events = []; S.sel = null; S.toyMode = false; S.yaw = S.pitch = 0; resetZoom(); applyStage('grass');
   const cells = []; for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) cells.push([r, c]);
   cells.sort(() => Math.random() - 0.5);
   for (let i = 0; i < 12; i++) spawnCat(i % 2 ? BLACK : WHITE, cells[i][0], cells[i][1], 0);
   setReserve(innerHeight > innerWidth ? 160 : 150, innerHeight > innerWidth ? 350 : 120);
-  hide('hud'); hide('result'); hide('howto'); hide('pick'); hide('pauseMenu'); hide('sugo'); hide('vs'); hide('sugoPreview'); show('title');
+  hide('hud'); hide('result'); hide('howto'); hide('pick'); hide('pauseMenu'); hide('sugo'); hide('vs'); hide('sugoPreview'); hide('award'); show('title');
   $('titleBest').textContent = store.get('best', 0) > 0 ? `ベスト +${store.get('best', 0)}` : '';
   Snd.startBgm(); Snd.duck(false);
 }
@@ -1572,7 +1654,25 @@ function cellFromPointer(cx, cy) {
   return inB(r, c) ? { r, c } : null;
 }
 let down = null;
+/* ピンチで拡大: 2本指で広げると寄る（離しても寄ったまま）、縮めると戻る。2本指を動かすと見る場所が動く */
+const pts = new Map(); let pinch = null;
+S.zoom = 1; S.focus = { x: 0, z: 0 };
+const ZOOM_MAX = 3;
+function pinchInfo() { const [a, b] = [...pts.values()]; return { d: Math.hypot(a.x - b.x, a.y - b.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 }; }
+function panBy(dx, dy) {
+  const k = 0.011 / S.zoom, cy = Math.cos(S.yaw), sy = Math.sin(S.yaw);
+  S.focus.x = clamp(S.focus.x - (dx * cy + dy * sy) * k, -3, 3); S.focus.z = clamp(S.focus.z - (-dx * sy + dy * cy) * k, -3, 3);
+}
+function resetZoom() { S.zoom = 1; S.focus = { x: 0, z: 0 }; pinch = null; pts.clear(); }
 canvas.addEventListener('pointerdown', (e) => {
+  pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pts.size === 2 && (S.mode === 'play' || S.mode === 'title')) {
+    if (down) { clearTimeout(down.lp); down = null; }
+    const p = pinchInfo(), cp = S.zoom < 1.05 ? cellFromPointer(p.mx, p.my) : null;
+    if (cp) S.focus = { x: cellX(cp.c), z: cellZ(cp.r) };
+    pinch = { d0: p.d, z0: S.zoom, mx: p.mx, my: p.my }; return;
+  }
+  if (pts.size > 2) return;
   Snd.init(); if (S.paused || (S.mode !== 'play' && S.mode !== 'title')) return;
   S.kb = false; try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
   down = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, moved: false, long: false, cell: cellFromPointer(e.clientX, e.clientY), id: e.pointerId };
@@ -1590,6 +1690,13 @@ canvas.addEventListener('pointerdown', (e) => {
   }, 480);
 });
 canvas.addEventListener('pointermove', (e) => {
+  if (pts.has(e.pointerId)) pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pinch && pts.size === 2) {
+    const p = pinchInfo(); S.zoom = clamp(pinch.z0 * p.d / Math.max(20, pinch.d0), 1, ZOOM_MAX);
+    panBy(p.mx - pinch.mx, p.my - pinch.my); pinch.mx = p.mx; pinch.my = p.my;
+    if (S.zoom <= 1.02) S.focus = { x: S.focus.x * 0.9, z: S.focus.z * 0.9 };
+    return;
+  }
   if (S.toyMode || S.toyDrag) S.toyHover = cellFromPointer(e.clientX, e.clientY);
   if (!down) return;
   const dx = e.clientX - down.x, dy = e.clientY - down.y;
@@ -1600,6 +1707,7 @@ canvas.addEventListener('pointermove', (e) => {
   }
 });
 canvas.addEventListener('pointerup', (e) => {
+  pts.delete(e.pointerId); if (pts.size < 2) pinch = null;
   if (!down) return; clearTimeout(down.lp);
   const d = down; down = null;
   if (d.moved || d.long) return;
@@ -1607,7 +1715,9 @@ canvas.addEventListener('pointerup', (e) => {
   if (S.mode === 'play') onTapCell(cp.r, cp.c);
   else if (S.mode === 'title') { const c = cell[cp.r][cp.c]; if (c) pokeCat(c); }
 });
-canvas.addEventListener('pointercancel', () => { if (down) clearTimeout(down.lp); down = null; });
+canvas.addEventListener('pointercancel', (e) => { pts.delete(e.pointerId); if (pts.size < 2) pinch = null; if (down) clearTimeout(down.lp); down = null; });
+// パソコン: ホイールで拡大
+canvas.addEventListener('wheel', (e) => { e.preventDefault(); if (S.mode !== 'play' && S.mode !== 'title') return; S.zoom = clamp(S.zoom * Math.exp(-e.deltaY * 0.0015), 1, ZOOM_MAX); if (S.zoom <= 1.01) S.focus = { x: 0, z: 0 }; }, { passive: false });
 
 window.addEventListener('keydown', (e) => {
   if (S.mode === 'title' && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); startFlow(); return; }
@@ -1667,8 +1777,11 @@ $('pauseBtn').onclick = () => { Snd.init(); setPaused(true); };
 $('resumeBtn').onclick = () => setPaused(false);
 $('pauseTitle').onclick = () => { goTitle(); };
 $('pauseRetry').onclick = () => { startGame(); };
-$('retryBtn').onclick = () => { Snd.sfx.ui(); if (S.opp != null && S.lastWin) openMap(); else startGame(); };
-$('toTitleBtn').onclick = () => { Snd.sfx.ui(); if (S.opp != null) openMap(); else goTitle(); };
+const toMapOrAward = () => { if (S.awardPending) { S.awardPending = false; openAward(); } else openMap(); }; // 完走した直後は賞状を出す
+$('retryBtn').onclick = () => { Snd.sfx.ui(); if (S.opp != null && S.lastWin) toMapOrAward(); else startGame(); };
+$('toTitleBtn').onclick = () => { Snd.sfx.ui(); if (S.opp != null) toMapOrAward(); else goTitle(); };
+$('sugoDone').onclick = () => { Snd.sfx.ui(); openAward(); };
+$('awardClose').onclick = () => { Snd.sfx.ui(); hide('award'); openMap(); };
 function syncSoundBtns() { const m = Snd.isMuted(); document.querySelectorAll('.soundBtn').forEach((b) => { b.textContent = m ? '🔇' : '🔊'; }); }
 document.querySelectorAll('.soundBtn').forEach((b) => b.onclick = () => { Snd.init(); Snd.setMuted(!Snd.isMuted()); syncSoundBtns(); });
 $('shareBtn').onclick = shareResult;
@@ -1717,7 +1830,8 @@ function fitCamera() {
 }
 function updateCamera(dt) {
   S.camIdle += dt;
-  camera.position.copy(camPos(S.camDist, S.yaw, BASE_EL + S.pitch)); camera.lookAt(0, 0, 0);
+  const z = S.zoom || 1, a = Math.min(1, (z - 1) / 0.8), tx = S.focus.x * a, tz = S.focus.z * a;
+  camera.position.copy(camPos(S.camDist / z, S.yaw, BASE_EL + S.pitch)).add(new THREE.Vector3(tx, 0, tz)); camera.lookAt(tx, 0, tz);
 }
 window.addEventListener('resize', () => { fitCamera(); });
 
@@ -1853,7 +1967,7 @@ function updateVisuals(dt) {
   if (gc) { animToy(ghostToy, cellX(gc.c), cellZ(gc.r), performance.now() / 1000); toyRange.position.x = cellX(gc.c); toyRange.position.z = cellZ(gc.r); }
   // 手番の縁の色と時間ゲージ
   const inTurn = S.mode === 'play' && S.phase === 'turn';
-  const tgt = 0xa3d98c; // 縁は緑のまま。手番はゲージの色（白/黒）で示す
+  const tgt = (STAGES[stageNow] || STAGES.grass).frame; // 縁は舞台の色のまま。手番はゲージの色（白/黒）で示す
   window.__frame.material.color.lerp(rimTmp.setHex(tgt), Math.min(1, dt * 8));
   gaugeMesh.visible = inTurn;
   if (inTurn) {
