@@ -47,10 +47,13 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
 #titleBest{font-weight:800;color:var(--pink-d);height:22px}
 .btn.locked{background:#ece6ea;color:#a597a0;box-shadow:0 4px 0 rgba(150,120,140,.18);display:flex;flex-direction:column;align-items:center;line-height:1.2;padding:10px 18px}
 .btn.locked small{font-size:11.5px;font-weight:800;margin-top:3px;color:#b58ca0}
-#btnTwo{display:flex;flex-direction:column;align-items:center;line-height:1.2}#btnTwo small{display:block}
-#btnSugo{display:flex;flex-direction:column;align-items:center;line-height:1.2}#btnSugo small{display:block;font-size:12px;font-weight:800;margin-top:4px;opacity:.85}
 #tapLayer{position:absolute;inset:0;z-index:45;display:flex;align-items:flex-end;justify-content:center;padding-bottom:calc(env(safe-area-inset-bottom) + 18vh);background:transparent;pointer-events:auto}
 #title.tapWait .titleBottom{visibility:hidden}
+#btnStart{display:flex;align-items:center;justify-content:center;gap:10px;font-size:22px;padding:13px 18px}#btnStart .fc svg{width:34px;height:34px;display:block}
+.tiles{display:flex;gap:10px}
+.tile{width:min(28vw,104px);height:min(26vw,96px);border:0;border-radius:22px;background:#fff;color:var(--ink);font-family:var(--font);font-weight:900;font-size:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;box-shadow:0 5px 0 rgba(150,120,140,.2),0 10px 20px rgba(120,80,100,.12);transition:transform .08s}
+.tile:active{transform:translateY(3px)}.tile .ic{display:flex;font-size:26px;line-height:1}.tile .ic svg{width:28px;height:28px}.tile small{display:none}
+.tile.locked{background:#ece6ea;color:#a597a0;box-shadow:0 4px 0 rgba(150,120,140,.18)}.tile.locked .ic{filter:grayscale(1);opacity:.55}.tile.locked small{display:block;font-size:10.5px;font-weight:800}
 #tapStart{font-size:20px;font-weight:900;color:#fff;background:rgba(224,112,143,.55);padding:12px 26px;border-radius:999px;animation:tapBlink 1.4s ease-in-out infinite}@keyframes tapBlink{50%{opacity:.45}}
 #tapLayer.hidden{display:none}
 .limited{background:#fff;border-radius:14px;padding:7px 14px;font-size:12.5px;font-weight:700;color:var(--ink);box-shadow:0 3px 0 rgba(150,120,140,.15);text-align:center;line-height:1.5}
@@ -212,10 +215,12 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
     </div>
     <div class="titleBottom">
       <div id="titleBest"></div>
-      <button class="btn" id="btnStart">ひとりで遊ぶ</button>
-      <button class="btn ghost locked" id="btnTwo"><span id="twoLabel">🔒 ふたりで遊ぶ</span><small id="twoSub">アプリ版で遊べるよ</small></button>
-      <button class="btn ghost locked" id="btnSugo"><span id="sugoLabel">🔒 チャレンジモード</span><small id="sugoSub">5匹のライバルに挑戦！</small></button>
-      <button class="btn ghost" id="btnHow">あそびかた</button>
+      <button class="btn" id="btnStart"><span class="fc" id="faceW"></span><span>ひとりで遊ぶ</span><span class="fc" id="faceB"></span></button>
+      <div class="tiles">
+        <button class="tile locked" id="btnTwo"><span class="ic" id="icTwo"></span><span id="twoLabel">ふたりで</span><small id="twoSub">アプリ版</small></button>
+        <button class="tile locked" id="btnSugo"><span class="ic" id="icSugo"></span><span id="sugoLabel">チャレンジ</span><small id="sugoSub">アプリ版</small></button>
+        <button class="tile" id="btnHow"><span class="ic">🐾</span><span>あそびかた</span></button>
+      </div>
       <div class="limited" id="limited">🎁 <b>期間限定・無料公開中</b><br>アプリ版（300円）は近日公開予定</div>
       <div class="credit">ゆるゲー研究所</div>
     </div>
@@ -1617,15 +1622,31 @@ function startGame(opts = {}) {
   counts(); updateHudTurn(); updateToyUI();
   showBanner('スタート！'); Snd.sfx.start();
 }
+function attractReset() {
+  for (const cat of S.cats.slice()) releaseCat(cat);
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { cell[r][c] = null; resv[r][c] = null; }
+  const mid = N / 2;
+  [[mid - 1, mid - 1, WHITE], [mid - 1, mid, BLACK], [mid, mid - 1, BLACK], [mid, mid, WHITE]].forEach(([r, c, col], i) => schedule(0.1 + i * 0.15, () => spawnCat(col, r, c, 2.2)));
+  S.attSide = WHITE; S.attT = 2.2; S.focusT = { x: 0, z: 0 };
+}
+function attractStep() {
+  S.attT = rnd(1.8, 2.8);
+  counts();
+  if (S.cats.length >= 30 || S.counts[1] === 0 || S.counts[2] === 0) { attractReset(); return; } // 満員・片方全滅でやり直し
+  let side = S.attSide, moves = validMoves(side);
+  if (!moves.length) { side = other(side); moves = validMoves(side); }
+  if (!moves.length) { attractReset(); return; }
+  const m = pick(moves); spawnCat(side, m.r, m.c, 2.2); applyFlips(m.flips, m.r, m.c, 0.5, 'place');
+  S.attSide = other(side);
+  S.focusT = { x: clamp(cellX(m.c), -0.8, 0.8), z: clamp(cellZ(m.r), -0.1, 0.9) }; // 上のロゴにかぶらない範囲で // 置いたあたりへカメラがゆっくり寄る
+}
 function goTitle() {
   Snd.init();
   for (const t of S.toys.slice()) removeToy(t);
   for (const cat of S.cats.slice()) releaseCat(cat);
   for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { cell[r][c] = null; resv[r][c] = null; }
-  hide('revealBox'); S.opp = null; S.two = false; S.skin = { 1: 'white', 2: 'black' }; CFG = Object.assign({}, DEF_CFG); S.mode = 'title'; S.phase = 'none'; S.attract = true; S.moveEnabled = true; S.paused = false; S.events = []; S.sel = null; S.toyMode = false; S.yaw = S.pitch = 0; resetZoom(); applyStage('grass');
-  const cells = []; for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) cells.push([r, c]);
-  cells.sort(() => Math.random() - 0.5);
-  for (let i = 0; i < 12; i++) spawnCat(i % 2 ? BLACK : WHITE, cells[i][0], cells[i][1], 0);
+  hide('revealBox'); S.opp = null; S.two = false; S.skin = { 1: 'white', 2: 'black' }; CFG = Object.assign({}, DEF_CFG); S.mode = 'title'; S.phase = 'none'; S.attract = true; S.moveEnabled = true; S.paused = false; S.events = []; S.sel = null; S.toyMode = false; S.yaw = S.pitch = 0; resetZoom(); S.zoom = TITLE_ZOOM; applyStage('grass');
+  attractReset();
   setReserve(innerHeight > innerWidth ? 160 : 150, innerHeight > innerWidth ? 350 : 120);
   hide('hud'); hide('result'); hide('howto'); hide('pick'); hide('pauseMenu'); hide('sugo'); hide('vs'); hide('sugoPreview'); hide('award'); show('title');
   $('titleBest').textContent = store.get('best', 0) > 0 ? `ベスト +${store.get('best', 0)}` : '';
@@ -1823,7 +1844,8 @@ $('vsBack').onclick = () => { Snd.sfx.ui(); openMap(); };
 $('vsChange').onclick = () => { Snd.sfx.ui(); S.pickFor = 'vs'; openPick(); };
 $('vsGo').onclick = () => { Snd.sfx.ui(); hide('vs'); startGame({ opp: S.vsIdx }); };
 $('pickBack').onclick = () => { Snd.sfx.ui(); if (S.pickFor === 'vs') { hide('pick'); openVs(S.vsIdx); } else goTitle(); };
-if (APP) { $('twoLabel').textContent = 'ふたりで遊ぶ'; hide('twoSub'); $('btnTwo').classList.remove('locked'); $('sugoLabel').textContent = 'チャレンジモード'; $('btnSugo').classList.remove('locked'); hide('limited'); hide('appBtn'); }
+$('faceW').innerHTML = catFaceSVG('white'); $('faceB').innerHTML = catFaceSVG('black'); $('icTwo').innerHTML = catFaceSVG('white') + catFaceSVG('black'); $('icSugo').innerHTML = ['buchi', 'chatora', 'sabi'].map((k) => catFaceSVG(k)).join('');
+if (APP) { $('btnTwo').classList.remove('locked'); $('btnSugo').classList.remove('locked'); hide('limited'); hide('appBtn'); }
 $('btnHow').onclick = () => { Snd.init(); Snd.sfx.ui(); openHowto(false); };
 $('howNext').onclick = () => {
   Snd.sfx.ui();
@@ -1885,8 +1907,10 @@ function fitCamera() {
   const sx = 0 - (m.x0 + m.x1) / 2, sy = (yMax + yMin) / 2 - (m.y0 + m.y1) / 2;
   camera.setViewOffset(w, h, -sx * w / 2, sy * h / 2, w, h);
 }
+const TITLE_ZOOM = 1.7;
 function updateCamera(dt) {
   S.camIdle += dt;
+  if (S.attract && S.focusT && !pinch) { const k = 1 - Math.pow(0.5, dt); S.focus.x += (S.focusT.x - S.focus.x) * k; S.focus.z += (S.focusT.z - S.focus.z) * k; }
   const z = S.zoom || 1, a = Math.min(1, (z - 1) / 0.8), tx = S.focus.x * a, tz = S.focus.z * a;
   camera.position.copy(camPos(S.camDist / z, S.yaw, BASE_EL + S.pitch)).add(new THREE.Vector3(tx, 0, tz)); camera.lookAt(tx, 0, tz);
 }
@@ -1916,8 +1940,9 @@ function simulate(dt) {
   for (const cat of S.cats.slice()) updateCat(cat, dt);
   updateToys(dt); updateParts(dt);
   if (S.attract) {
-    // タイトル背景: 片方の色が消えたり満員になったらやり直し
-    counts(); if (S.cats.length && (S.counts[1] === 0 || S.counts[2] === 0)) { for (const c of S.cats.slice()) { if (Math.random() < 0.5 && S.cats.length > 4) releaseCat(c); } const e = []; for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (!cell[r][c]) e.push([r, c]); if (e.length) { const p = pick(e); spawnCat(S.counts[1] === 0 ? WHITE : BLACK, p[0], p[1], 0); } }
+    // タイトル背景: 盤にアップで寄り、猫がどんどん増えていく（置く→ひっくり返る→いろいろなリアクション）
+    S.attT -= dt;
+    if (S.attT <= 0) attractStep();
     return;
   }
   if (S.mode !== 'play') return;
