@@ -1492,7 +1492,7 @@ function afterBoardChange() {
 function startTurn(color) {
   if (S.two) { S.me = color; S.cpu = other(color); } // ふたりで遊ぶ: 置く番の人が「あなた」
   S.cpuPend = null; cpuRing.visible = false;
-  S.phase = 'turn'; S.turn = color; S.turnMax = color === S.me ? CFG.turnTime : TURN_TIME; S.timeLeft = S.turnMax; clearSel(); S.noMoveT = 0; S.turnNo++; S.rescueTries = 0; S.rescueWait = false;
+  S.phase = 'turn'; S.turn = color; S.turnMax = color === S.me ? (S.firstGame ? FIRST_TURN_TIME : CFG.turnTime) : TURN_TIME; S.timeLeft = S.turnMax; clearSel(); S.noMoveT = 0; S.turnNo++; S.rescueTries = 0; S.rescueWait = false;
   const moves = validMoves(color);
   if (!moves.length && S.moveEnabled && rescue(color)) { S.rescueWait = true; S.rescueTries = 1; } // 置けなくてもすぐパスにせず、歩いている猫を待ってから判定する
   if (color === S.cpu) {
@@ -1570,6 +1570,7 @@ function updateReveal(dt) {
   }
 }
 function showResult() {
+  if (S.firstGame) { S.firstGame = false; store.set('firstGameDone', true); }
   S.phase = 'over'; S.mode = 'result'; counts();
   const my = S.counts[S.me], opp = S.counts[S.cpu];
   const win = my > opp, draw = my === opp;
@@ -1644,7 +1645,8 @@ function startGame(opts = {}) {
   if (S.opp != null) mine = autoSkin(oppSkin); // すごろくは見分けやすい白か黒に自動で決まる
   S.collar = false;
   S.skin = { 1: mine, 2: oppSkin }; S.passes = 0; S.moveEnabled = false;
-  S.guide = !S.two && S.opp == null && !store.get('seenGuide', false); S.guideCell = null; // はじめての1局だけ置き場所を案内
+  S.guide = !S.two && S.opp == null && !store.get('seenGuide', false); S.guideCell = null;
+  S.firstGame = !S.two && S.opp == null && !store.get('firstGameDone', false); // はじめての1局だけ持ち時間を長く // はじめての1局だけ置き場所を案内
   S.toyCool = { 1: 0, 2: 0 }; S.toyMode = false; S.sel = null; S.yaw = 0; S.pitch = 0; resetZoom(); applyStage(S.opp != null ? OPPONENTS[S.opp].stage : 'grass');
   S.paused = false; S.events = [];
   const mid = N / 2;
@@ -1968,6 +1970,7 @@ function fitCamera() {
   const sx = 0 - (m.x0 + m.x1) / 2, sy = (yMax + yMin) / 2 - (m.y0 + m.y1) / 2;
   camera.setViewOffset(w, h, -sx * w / 2, sy * h / 2, w, h);
 }
+const FIRST_TURN_TIME = 20; // はじめての1局のあなたの持ち時間（秒）
 const TITLE_ZOOM = 1.6; // タイトルの盤は動かさない（実際の大きさは fitTitleBoard で決める）
 function updateCamera(dt) {
   S.camIdle += dt;
