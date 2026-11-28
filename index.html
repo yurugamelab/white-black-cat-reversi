@@ -218,7 +218,6 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
     <div class="logo">
       <div class="l1"><b>白猫</b> vs <span class="bk">黒猫</span></div>
       <div class="l2">リバーシ</div>
-      <div class="sub">猫が勝手に歩く、ゆるいリバーシ！</div>
     </div>
     <div class="titleBottom">
       <button class="btn" id="btnStart"><span class="fc" id="faceW"></span><span>ひとりで遊ぶ</span><span class="fc" id="faceB"></span></button>
@@ -1653,8 +1652,25 @@ function attractStep() {
   if (!moves.length) { attractReset(); return; }
   const m = pick(moves); spawnCat(side, m.r, m.c, 2.2); applyFlips(m.flips, m.r, m.c, 0.5, 'place');
   S.attSide = other(side);
-  S.focusT = { x: clamp(cellX(m.c), -0.8, 0.8), z: clamp(cellZ(m.r), -0.1, 0.9) }; // 上のロゴにかぶらない範囲で // 置いたあたりへカメラがゆっくり寄る
 }
+/** タイトル: ロゴの下からボタンの上までに盤がおさまるように余白を測る */
+function fitTitleBoard() {
+  requestAnimationFrame(() => {
+    if (S.mode !== 'title') return;
+    const lg = document.querySelector('#title .logo').getBoundingClientRect(), tb = document.querySelector('#title .titleBottom').getBoundingClientRect();
+    const top = lg.bottom + 4, bottom = innerHeight - tb.top + 4;
+    S.reserveTo = { top, bottom }; S.reserve = { top, bottom }; fitCamera();
+    // 盤の上下がロゴとボタンにかぶらない範囲で、いちばん大きく寄る（横ははみ出してよい）
+    const v = new THREE.Vector3(), H = N / 2 + 0.4;
+    for (let z = 2.4; z >= 1; z -= 0.05) {
+      S.zoom = z; updateCamera(0); camera.updateMatrixWorld(true);
+      let y0 = 1e9, y1 = -1e9;
+      for (const [x, zz] of [[-H, -H], [H, -H], [-H, H], [H, H]]) for (const y of [-0.27, 0.15]) { v.set(x, y, zz).project(camera); const py = (1 - v.y) / 2 * innerHeight; y0 = Math.min(y0, py); y1 = Math.max(y1, py); }
+      if (y0 >= top && y1 <= innerHeight - bottom) break;
+    }
+  });
+}
+window.addEventListener('resize', () => { if (S.mode === 'title') fitTitleBoard(); });
 function goTitle() {
   Snd.init();
   for (const t of S.toys.slice()) removeToy(t);
@@ -1662,7 +1678,7 @@ function goTitle() {
   for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { cell[r][c] = null; resv[r][c] = null; }
   hide('revealBox'); S.opp = null; S.two = false; S.skin = { 1: 'white', 2: 'black' }; CFG = Object.assign({}, DEF_CFG); S.mode = 'title'; S.phase = 'none'; S.attract = true; S.moveEnabled = true; S.paused = false; S.events = []; S.sel = null; S.toyMode = false; S.yaw = S.pitch = 0; resetZoom(); S.zoom = TITLE_ZOOM; applyStage('grass');
   attractReset();
-  setReserve(innerHeight > innerWidth ? 160 : 150, innerHeight > innerWidth ? 350 : 120);
+  fitTitleBoard();
   hide('hud'); hide('result'); hide('howto'); hide('pick'); hide('pauseMenu'); hide('sugo'); hide('vs'); hide('sugoPreview'); hide('award'); show('title');
   Snd.startBgm(); Snd.duck(false);
 }
@@ -1930,10 +1946,9 @@ function fitCamera() {
   const sx = 0 - (m.x0 + m.x1) / 2, sy = (yMax + yMin) / 2 - (m.y0 + m.y1) / 2;
   camera.setViewOffset(w, h, -sx * w / 2, sy * h / 2, w, h);
 }
-const TITLE_ZOOM = 1.7;
+const TITLE_ZOOM = 1.6; // タイトルの盤は動かさない（実際の大きさは fitTitleBoard で決める）
 function updateCamera(dt) {
   S.camIdle += dt;
-  if (S.attract && S.focusT && !pinch) { const k = 1 - Math.pow(0.5, dt); S.focus.x += (S.focusT.x - S.focus.x) * k; S.focus.z += (S.focusT.z - S.focus.z) * k; }
   const z = S.zoom || 1, a = Math.min(1, (z - 1) / 0.8), tx = S.focus.x * a, tz = S.focus.z * a;
   camera.position.copy(camPos(S.camDist / z, S.yaw, BASE_EL + S.pitch)).add(new THREE.Vector3(tx, 0, tz)); camera.lookAt(tx, 0, tz);
 }
