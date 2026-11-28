@@ -202,7 +202,7 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
     <div class="titleBottom">
       <div id="titleBest"></div>
       <button class="btn" id="btnStart">はじめる</button>
-      <button class="btn ghost locked" id="btnSugo"><span id="sugoLabel">🔒 すごろくモード</span><small id="sugoSub">勝った猫が仲間になる！</small></button>
+      <button class="btn ghost locked" id="btnSugo"><span id="sugoLabel">🔒 すごろくモード</span><small id="sugoSub">5匹のライバルに挑戦！</small></button>
       <button class="btn ghost" id="btnHow">あそびかた</button>
       <div class="limited" id="limited">🎁 <b>期間限定・無料公開中</b><br>アプリ版（300円）は近日公開予定</div>
       <div class="credit">ゆるゲー研究所</div>
@@ -273,9 +273,9 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
 
   <div id="sugo" class="layer hidden">
     <h2>すごろく</h2>
-    <p class="sugoLead">5匹の猫に勝つと、その猫が仲間になるよ</p>
+    <p class="sugoLead">5匹の猫に勝って、すごろくを完走しよう</p>
     <div id="sugoList"></div>
-    <div id="sugoDone" class="hidden">🎉 ぜんぶの猫が仲間になった！</div>
+    <div id="sugoDone" class="hidden">🎉 ぜんぶの猫に勝った！</div>
     <button class="btn ghost sm" id="sugoBack" style="width:auto">タイトルへ</button>
   </div>
 
@@ -295,7 +295,7 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
   <div id="sugoPreview" class="layer hidden">
     <div class="vsCard">
       <h2>すごろくモード</h2>
-      <p class="pvLead">個性ゆたかな<b>5匹のライバル猫</b>と勝負！<br>勝つとその猫が<b>仲間</b>になって、<br>自分の猫として使えるよ。</p>
+      <p class="pvLead">個性ゆたかな<b>5匹のライバル猫</b>と勝負！<br>よく寝る猫、跳びまわる猫、大家族…<br>相手ごとに<b>遊び心地が変わる</b>よ。</p>
       <div id="pvList"></div>
       <div class="pvApp">📱 アプリ版で遊べます（近日公開）</div>
       <button class="btn ghost sm" id="pvClose" style="width:auto">とじる</button>
@@ -636,7 +636,7 @@ const OPPONENTS = [
   { id: 'daikazoku', skin: 'hachiware', name: '大家族',       line: 'うちは家族が多いのよ',     trait: '最初から10匹で始まる',
     cfg: { startFamily: true, cpuRandom: 0.2 } },
   { id: 'boss', skin: 'sabi',          name: 'ボス猫',       line: 'この町の角はおれのもの',   trait: '角と辺を狙う最強の猫',
-    cfg: { cpuRandom: 0.05, cornerBonus: 12, edgeBonus: 3, turnTime: 8, comeback: 0.5, cpuToyP: 0.5, startCorners: true, oppScale: 1.3 } },
+    cfg: { cpuRandom: 0.15, cornerBonus: 9, edgeBonus: 2, comeback: 1.5, cpuToyP: 0.5, startCorners: 4, oppScale: 1.3, napP: 0.2 } },
 ];
 
 /** 今の対戦の設定（相手で変わる）。フリー対戦はこの初期値 */
@@ -665,7 +665,7 @@ const canPair = (a, b) => SKINS[a].light !== SKINS[b].light;
 function sugoCleared() { return store.get('sugoCleared', []); }
 function isCleared(i) { return sugoCleared().includes(OPPONENTS[i].id); }
 function nextOpp() { for (let i = 0; i < OPPONENTS.length; i++) if (!isCleared(i)) return i; return -1; }
-/** 使える毛色: 白・黒 ＋ 勝って仲間にした猫 */
+/** 使える毛色: 白・黒（勝った猫を使う仕組みはやめた） */
 function unlockedSkins() { return ['white', 'black']; } // 勝った相手を使う仕組みはやめた（2026-11-29）
 function mySkin() {
   let k = store.get('mySkin', null);
@@ -707,7 +707,7 @@ function openSugoPreview() {
   show('sugoPreview');
 }
 
-/* ---- 猫の色選び（解放した猫も選べる） ---- */
+/* ---- 猫の色選び（白か黒） ---- */
 function renderPick() {
   const row = $('pickRow'); row.innerHTML = '';
   const cur = mySkin(), have = unlockedSkins();
@@ -1352,9 +1352,9 @@ function startTurn(color) {
   }
   else { showBanner(sideName(S.cpu) + 'の番', SKINS[S.skin[color]].light ? 'sm wt' : 'sm bt', 1.1); Snd.sfx.meow(0.78, 0.25); }
 }
-function doPass(color) {
+function doPass(color, msg) {
   S.passes++;
-  showToast(color === S.me ? 'あなたは置けないので パス にゃ〜' : sideName(S.cpu) + 'はパス にゃ〜', 1.6); Snd.sfx.pass();
+  showToast(msg || (color === S.me ? 'あなたは置けないので パス にゃ〜' : sideName(S.cpu) + 'はパス にゃ〜'), 1.6); Snd.sfx.pass();
   if (S.passes >= 4) { beginEnding(); return; } // 白黒とも2回ずつ続けてパスしたら終わり
   S.phase = 'gap'; S.gapT = 1.0; S.nextTurn = other(color);
 }
@@ -1429,7 +1429,7 @@ function showResult() {
   $('resBest').textContent = (note ? note + '　' : '') + (best > 0 ? `ベスト +${best}` : 'ベスト ー');
   $('resBest').className = note ? 'best new' : 'best';
   S.share = { my, opp, win, draw, line, w: S.counts[WHITE], b: S.counts[BLACK] };
-  // すごろく: 勝つとその猫が仲間に
+  // すごろく: 勝った相手を記録（マップで「かった！」）
   S.lastWin = win; $('resUnlock').classList.add('hidden');
   $('retryBtn').textContent = 'もう一度遊ぶ'; $('toTitleBtn').textContent = 'タイトルへ';
   if (S.opp != null) {
@@ -1794,6 +1794,7 @@ function simulate(dt) {
       if (S.time >= S.cpuAt || S.timeLeft <= 0) {
         S.rescueWait = false;
         const mv = cpuPickMove(validMoves(S.cpu));
+        if (mv && CFG.napP && Math.random() < CFG.napP) { doPass(S.cpu, sideName(S.cpu) + 'は油断して うたた寝中…'); return; } // ボス: ときどき油断して置かない
         if (mv) { S.cpuPend = { r: mv.r, c: mv.c, t0: S.time }; Snd.sfx.select(); } else if (S.timeLeft <= 0 || !walkerList().length) doPass(S.cpu); else S.cpuAt = S.time + 0.3;
       }
     }
