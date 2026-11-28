@@ -607,15 +607,15 @@ const SKINS = {
 /** 相手猫5匹。cfg はこの相手と戦うときだけ変わる数値（CPUとねこ監督の性格） */
 const OPPONENTS = [
   { id: 'nebosuke', skin: 'buchi',     name: 'ねぼすけ',     line: 'ねむい…お手やわらかに',   trait: 'よく寝る・のんびり',
-    cfg: { cpuRandom: 0.6, oppSleep: 0.45, oppWalkMul: 1.6 } },
-  { id: 'kuishinbo', skin: 'chatora',  name: 'くいしんぼう', line: 'そのじゃらし、ちょうだい', trait: '猫じゃらしに釣られやすい',
-    cfg: { lureRadius: 3, lureSteps: 5, cpuToyP: 0.15 } },
+    cfg: { cpuRandom: 0.6, oppSleep: 0.7, oppWalkMul: 1.6 } },
   { id: 'yancha', skin: 'kijitora',    name: 'やんちゃ',     line: 'じっとしてられない！',     trait: '走り回る',
-    cfg: { oppWalkMul: 0.55, oppRun: 0.45, cpuRandom: 0.25 } },
-  { id: 'itazura', skin: 'hachiware',  name: 'いたずら',     line: 'じゃらしで遊んであげる',   trait: '猫じゃらしを多用してくる',
-    cfg: { cpuToyP: 0.9, cpuRandom: 0.18 } },
+    cfg: { oppWalkMul: 0.3, oppRun: 0.6, oppSleep: 0, cpuRandom: 0.25 } },
+  { id: 'otenba', skin: 'chatora',    name: 'おてんば',     line: 'ぴょーんって跳んでくよ！', trait: 'ぴょんと2マス跳ぶ',
+    cfg: { jumpP: 0.55, oppWalkMul: 0.8, cpuRandom: 0.2 } },
+  { id: 'daikazoku', skin: 'hachiware', name: '大家族',       line: 'うちは家族が多いのよ',     trait: '最初から10匹で始まる',
+    cfg: { startFamily: true, cpuRandom: 0.2 } },
   { id: 'boss', skin: 'sabi',          name: 'ボス猫',       line: 'この町の角はおれのもの',   trait: '角と辺を狙う最強の猫',
-    cfg: { cpuRandom: 0.05, cornerBonus: 12, edgeBonus: 3, turnTime: 8, comeback: 0.5, cpuToyP: 0.5 } },
+    cfg: { cpuRandom: 0.05, cornerBonus: 12, edgeBonus: 3, turnTime: 8, comeback: 0.5, cpuToyP: 0.5, startCorners: true, oppScale: 1.3 } },
 ];
 
 /** 今の対戦の設定（相手で変わる）。フリー対戦はこの初期値 */
@@ -916,6 +916,7 @@ function makeCat() {
 }
 const COLLAR_GEO = new THREE.TorusGeometry(0.06, 0.013, 8, 20);
 function setCatColor(cat, color) {
+  cat.inner.scale.setScalar(CAT_SCALE * (S.mode === 'play' && color === S.cpu && CFG.oppScale ? CFG.oppScale : 1));
   cat.shown = color; cat.rig.mesh.material = CatAsset.mats[S.skin[color]] || CatAsset.mats[color === WHITE ? 'white' : 'black'];
   cat.collar.visible = !!S.collar; cat.collar.material.color.setHex(color === S.me ? 0xff6fa5 : 0x8a5ad6);
 }
@@ -1091,8 +1092,19 @@ function rescue(side) {
   ch.cat.sleeping = false; ch.cat.busyUntil = 0; ch.cat.rescue = true; startWalk(ch.cat, ch.d, 0.45);
   return true;
 }
+// おてんば: 相手の猫はときどき2マス先へぴょんと跳ぶ
+function jumpDests(cat) {
+  const opts = [];
+  for (const [dr, dc] of DIRS) {
+    const r = cat.r + dr * 2, c = cat.c + dc * 2;
+    if (!inB(r, c) || cell[r][c] || resv[r][c] || isCorner(r, c)) continue;
+    opts.push({ r, c });
+  }
+  return opts;
+}
 function pickDest(cat) {
-  const opts = freeDests(cat);
+  let opts = freeDests(cat);
+  if (S.mode === 'play' && CFG.jumpP && cat.color === S.cpu && !cat.lure && Math.random() < CFG.jumpP) { const j = jumpDests(cat); if (j.length) opts = j; }
   if (!opts.length) return null;
   if (cat.lure && cat.lure.steps > 0 && S.time < cat.lure.until) {
     const L = cat.lure; let best = null, bd = Math.hypot(cat.r - L.r, cat.c - L.c) - 0.01;
@@ -1122,6 +1134,8 @@ function startWalk(cat, d, alertTime) {
   cat.gait = Math.random() < (cat.lure ? 0.8 : 0.25) ? 'trot' : 'walk';
   if (!cat.lure && Math.random() < (S.mode === 'play' && cat.color === S.cpu ? CFG.oppRun : 0.1)) cat.gait = 'run';
   cat.speed = cat.gait === 'run' ? 3.0 : (cat.gait === 'trot' ? 1.9 : 1.0);
+  cat.jumpLen = Math.max(Math.abs(d.r - cat.r), Math.abs(d.c - cat.c)) > 1 ? Math.hypot(cellX(d.c) - cat.x, cellZ(d.r) - cat.z) : 0;
+  if (cat.jumpLen) { cat.gait = 'jump'; cat.speed = 2.6; }
   cat.mode = 'alert'; cat.timer = alertTime != null ? alertTime : (cat.lure ? 0.5 : (cat.gait === 'run' ? 0.4 : 0.95)); cat.wig = 0;
   playAnim(cat, 'crouch', { fade: 0.15 }); cat.sleeping = false;
 }
@@ -1177,13 +1191,14 @@ function updateCat(cat, dt) {
     }
     case 'turn': {
       const d = angDiff(cat.targetYaw, cat.yaw); cat.yaw += clamp(d, -9 * dt, 9 * dt);
-      if (Math.abs(angDiff(cat.targetYaw, cat.yaw)) < 0.45) { cat.mode = 'walk'; playAnim(cat, cat.gait, { fade: 0.15, speed: 1 }); }
+      if (Math.abs(angDiff(cat.targetYaw, cat.yaw)) < 0.45) { cat.mode = 'walk'; playAnim(cat, cat.gait, { fade: 0.15, speed: 1, once: cat.gait === 'jump', restart: true }); }
       break;
     }
     case 'walk': {
       cat.yaw += clamp(angDiff(cat.targetYaw, cat.yaw), -9 * dt, 9 * dt);
       const tx = cellX(cat.dest.c), tz = cellZ(cat.dest.r), dx = tx - cat.x, dz = tz - cat.z, dist = Math.hypot(dx, dz), step = cat.speed * dt;
-      if (dist <= step) { arrive(cat); } else {
+      if (cat.jumpLen) { const t = 1 - Math.max(0, dist - step) / cat.jumpLen; cat.y = Math.sin(Math.PI * Math.min(1, t)) * 0.9; }
+      if (dist <= step) { if (cat.jumpLen) { cat.y = 0; cat.jumpLen = 0; dust(cat.x, cat.z); } arrive(cat); } else {
         cat.x += dx / dist * step; cat.z += dz / dist * step;
         const fx = cellX(cat.c), fz = cellZ(cat.r);
         if ((cat.r !== cat.dest.r || cat.c !== cat.dest.c) && Math.hypot(cat.x - tx, cat.z - tz) < Math.hypot(cat.x - fx, cat.z - fz)) crossInto(cat);
@@ -1224,7 +1239,7 @@ function updateCat(cat, dt) {
     ox += o.x * w; oy += o.y * w; oz += o.z * w; wsum += w;
   }
   if (wsum > 0) { ox /= wsum; oy /= wsum; oz /= wsum; }
-  cat.inner.position.set(ox * CAT_SCALE, oy * CAT_SCALE, oz * CAT_SCALE);
+  { const sc = cat.inner.scale.x; cat.inner.position.set(ox * sc, oy * sc, oz * sc); }
   cat.holder.rotation.y = cat.yaw + spin + (cat.mode === 'alert' ? cat.wig : 0);
   cat.bang.visible = false;
   if (cat.bang.visible) cat.bang.position.y = 1.35 + Math.abs(Math.sin(S.time * 14)) * 0.12;
@@ -1422,6 +1437,8 @@ function startGame(opts = {}) {
   S.paused = false; S.events = [];
   const mid = N / 2;
   [[mid - 1, mid - 1, WHITE], [mid - 1, mid, BLACK], [mid, mid - 1, BLACK], [mid, mid, WHITE]].forEach(([r, c, col], i) => schedule(0.15 + i * 0.18, () => spawnCat(col, r, c, 2.4)));
+  if (CFG.startFamily) [[1, 1], [1, 2], [1, 3], [1, 4], [2, 1], [3, 1], [4, 1], [4, 2], [2, 4], [4, 4]].forEach(([r, c], i) => schedule(0.9 + i * 0.12, () => spawnCat(S.cpu, r, c, 2.4))); // 大家族: 最初から相手だけ10匹多い
+  if (CFG.startCorners) [[0, 0], [0, N - 1], [N - 1, 0], [N - 1, N - 1]].forEach(([r, c], i) => schedule(0.9 + i * 0.18, () => spawnCat(S.cpu, r, c, 2.4))); // ボス猫は最初から角を4つ持っている
   setReserve(innerHeight > innerWidth ? 150 : 84, innerHeight > innerWidth ? 175 : 96);
   hide('title'); hide('howto'); hide('pick'); hide('result'); hide('pauseMenu'); hide('sugo'); hide('vs'); hide('sugoPreview'); show('hud');
   $('youW').classList.remove('hidden'); $('youB').classList.add('hidden'); paintFaces();
