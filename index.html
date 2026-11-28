@@ -202,7 +202,7 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
     <div class="titleBottom">
       <div id="titleBest"></div>
       <button class="btn" id="btnStart">はじめる</button>
-      <button class="btn ghost locked" id="btnSugo"><span id="sugoLabel">🔒 すごろくモード</span><small id="sugoSub">5匹のライバルに挑戦！</small></button>
+      <button class="btn ghost locked" id="btnSugo"><span id="sugoLabel">🔒 チャレンジモード</span><small id="sugoSub">5匹のライバルに挑戦！</small></button>
       <button class="btn ghost" id="btnHow">あそびかた</button>
       <div class="limited" id="limited">🎁 <b>期間限定・無料公開中</b><br>アプリ版（300円）は近日公開予定</div>
       <div class="credit">ゆるゲー研究所</div>
@@ -272,8 +272,8 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
   </div>
 
   <div id="sugo" class="layer hidden">
-    <h2>すごろく</h2>
-    <p class="sugoLead">5匹の猫に勝って、すごろくを完走しよう</p>
+    <h2>チャレンジ</h2>
+    <p class="sugoLead">5匹の猫に勝って、チャレンジを完走しよう</p>
     <div id="sugoList"></div>
     <div id="sugoDone" class="hidden">🎉 ぜんぶの猫に勝った！</div>
     <button class="btn ghost sm" id="sugoBack" style="width:auto">タイトルへ</button>
@@ -294,7 +294,7 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
 
   <div id="sugoPreview" class="layer hidden">
     <div class="vsCard">
-      <h2>すごろくモード</h2>
+      <h2>チャレンジモード</h2>
       <p class="pvLead">個性ゆたかな<b>5匹のライバル猫</b>と勝負！<br>よく寝る猫、跳びまわる猫、大家族…<br>相手ごとに<b>遊び心地が変わる</b>よ。</p>
       <div id="pvList"></div>
       <div class="pvApp">📱 アプリ版で遊べます（近日公開）</div>
@@ -1434,11 +1434,11 @@ function showResult() {
   $('retryBtn').textContent = 'もう一度遊ぶ'; $('toTitleBtn').textContent = 'タイトルへ';
   if (S.opp != null) {
     const o = OPPONENTS[S.opp];
-    $('toTitleBtn').textContent = 'すごろくへ';
+    $('toTitleBtn').textContent = 'チャレンジへ';
     if (win) {
       S.sugoLoss[S.opp] = 0;
       if (!isCleared(S.opp)) store.set('sugoCleared', sugoCleared().concat(o.id));
-      $('retryBtn').textContent = nextOpp() === -1 ? 'すごろくへ' : 'つぎの相手へ';
+      $('retryBtn').textContent = nextOpp() === -1 ? 'チャレンジへ' : 'つぎの相手へ';
     } else { S.sugoLoss[S.opp] = (S.sugoLoss[S.opp] || 0) + 1; $('retryBtn').textContent = 'もう一回にゃ'; }
   }
   const winner = win ? S.me : (draw ? 0 : S.cpu);
@@ -1656,7 +1656,7 @@ $('vsBack').onclick = () => { Snd.sfx.ui(); openMap(); };
 $('vsChange').onclick = () => { Snd.sfx.ui(); S.pickFor = 'vs'; openPick(); };
 $('vsGo').onclick = () => { Snd.sfx.ui(); hide('vs'); startGame({ opp: S.vsIdx }); };
 $('pickBack').onclick = () => { Snd.sfx.ui(); if (S.pickFor === 'vs') { hide('pick'); openVs(S.vsIdx); } else goTitle(); };
-if (APP) { $('sugoLabel').textContent = 'すごろくモード'; $('btnSugo').classList.remove('locked'); hide('limited'); hide('appBtn'); }
+if (APP) { $('sugoLabel').textContent = 'チャレンジモード'; $('btnSugo').classList.remove('locked'); hide('limited'); hide('appBtn'); }
 $('btnHow').onclick = () => { Snd.init(); Snd.sfx.ui(); openHowto(false); };
 $('howNext').onclick = () => {
   Snd.sfx.ui();
