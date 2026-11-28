@@ -49,7 +49,10 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
 .btn.locked small{font-size:11.5px;font-weight:800;margin-top:3px;color:#b58ca0}
 #btnTwo{display:flex;flex-direction:column;align-items:center;line-height:1.2}#btnTwo small{display:block}
 #btnSugo{display:flex;flex-direction:column;align-items:center;line-height:1.2}#btnSugo small{display:block;font-size:12px;font-weight:800;margin-top:4px;opacity:.85}
-#tapStart{font-size:18px;font-weight:900;color:var(--pink-d);animation:tapBlink 1.4s ease-in-out infinite}@keyframes tapBlink{50%{opacity:.35}}
+#tapLayer{position:absolute;inset:0;z-index:45;display:flex;align-items:flex-end;justify-content:center;padding-bottom:calc(env(safe-area-inset-bottom) + 18vh);background:transparent;pointer-events:auto}
+#title.tapWait .titleBottom{visibility:hidden}
+#tapStart{font-size:20px;font-weight:900;color:#fff;background:rgba(224,112,143,.55);padding:12px 26px;border-radius:999px;animation:tapBlink 1.4s ease-in-out infinite}@keyframes tapBlink{50%{opacity:.45}}
+#tapLayer.hidden{display:none}
 .limited{background:#fff;border-radius:14px;padding:7px 14px;font-size:12.5px;font-weight:700;color:var(--ink);box-shadow:0 3px 0 rgba(150,120,140,.15);text-align:center;line-height:1.5}
 .limited b{color:var(--pink-d)}
 .credit{font-size:11px;color:var(--ink-s);font-weight:700}
@@ -333,7 +336,8 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
   <div id="toast"></div>
   <div id="banner"></div>
   <div id="bigCount"></div>
-  <div id="loading" class="layer"><div style="font-size:26px;font-weight:900">白猫vs黒猫リバーシ</div><div class="bar"><i id="loadBar"></i></div><div id="loadMsg">ねこをよんでいます…</div><div id="tapStart" class="hidden">画面をタップしてスタート</div></div>
+  <div id="loading" class="layer"><div style="font-size:26px;font-weight:900">白猫vs黒猫リバーシ</div><div class="bar"><i id="loadBar"></i></div><div id="loadMsg">ねこをよんでいます…</div></div>
+  <div id="tapLayer" class="hidden"><div id="tapStart">画面をタップしてスタート</div></div>
 </div>
 <script>void ('Scripts "build/three.js" and "build/three.min.js" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation'),
 /**
@@ -680,7 +684,7 @@ const OPPONENTS = [
   { id: 'otenba', stage: 'roof', skin: 'chatora',    name: 'おてんば',     line: 'ぴょーんって跳んでくよ！', trait: 'ぴょんと2マス跳ぶ',
     cfg: { jumpP: 0.55, oppWalkMul: 0.8, cpuRandom: 0.2 } },
   { id: 'daikazoku', stage: 'kitchen', skin: 'hachiware', name: '大家族',       line: 'うちは家族が多いのよ',     trait: '最初から10匹で始まる',
-    cfg: { startFamily: true, cpuRandom: 0.2 } },
+    cfg: { startFamily: 'scatter', cpuRandom: 0.1, cornerBonus: 9, edgeBonus: 2 } }, // 家族は盤にばらばらに散らばって始まる（一気に取られにくい）
   { id: 'boss', stage: 'alley', skin: 'sabi',          name: 'ボス猫',       line: 'この町の角はおれのもの',   trait: '角と辺を狙う最強の猫',
     cfg: { cpuRandom: 0.15, cornerBonus: 9, edgeBonus: 2, comeback: 1.5, cpuToyP: 0.5, startCorners: 4, oppScale: 1.3, napP: 0.2 } },
 ];
@@ -1548,7 +1552,6 @@ function showResult() {
   $('retryBtn').textContent = 'もう一度遊ぶ'; $('toTitleBtn').textContent = 'タイトルへ';
   if (S.opp != null) {
     const o = OPPONENTS[S.opp];
-    $('toTitleBtn').textContent = 'チャレンジへ';
     if (win) {
       S.sugoLoss[S.opp] = 0;
       if (!isCleared(S.opp)) { store.set('sugoCleared', sugoCleared().concat(o.id)); if (nextOpp() === -1) { store.set('sugoDoneAt', Date.now()); S.awardPending = true; } }
@@ -1566,6 +1569,26 @@ function showResult() {
   Snd.duck(false); if (win) Snd.sfx.win(); else if (draw) Snd.sfx.draw(); else Snd.sfx.lose();
 }
 
+/** 大家族: 家族の猫を盤にばらばらに置く（隣どうしにしない＝一気に取られにくい。毎回ちがう並び） */
+function scatterFamily(n) {
+  const mid = N / 2, center = [[mid - 1, mid - 1, WHITE], [mid - 1, mid, BLACK], [mid, mid - 1, BLACK], [mid, mid, WHITE]];
+  for (let tries = 0; tries < 200; tries++) {
+    const g = []; for (let r = 0; r < N; r++) g.push(new Array(N).fill(0));
+    for (const [r, c, col] of center) g[r][c] = col === WHITE ? S.me : S.cpu;
+    const cells = []; for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (!g[r][c] && !isCorner(r, c)) cells.push([r, c]);
+    cells.sort(() => Math.random() - 0.5);
+    const out = [];
+    for (const [r, c] of cells) {
+      if (out.length >= n) break;
+      if ([[0, 1], [1, 0], [0, -1], [-1, 0]].some(([dr, dc]) => inB(r + dr, c + dc) && g[r + dr][c + dc] === S.cpu)) continue;
+      g[r][c] = S.cpu; out.push([r, c]);
+    }
+    if (out.length < n) continue;
+    let moves = 0; for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (!g[r][c] && scanFlips((a, b) => g[a][b], r, c, S.me).length) moves++;
+    if (moves >= 2) return out;
+  }
+  return [[0, 1], [0, 4], [1, 0], [1, 5], [4, 0], [4, 5], [5, 1], [5, 4], [2, 5], [3, 0]];
+}
 function startGame(opts = {}) {
   Snd.init(); Snd.startBgm();
   if (opts.opp === undefined) opts.opp = S.opp; // もう一度遊ぶ: 同じ相手
@@ -1586,7 +1609,7 @@ function startGame(opts = {}) {
   S.paused = false; S.events = [];
   const mid = N / 2;
   [[mid - 1, mid - 1, WHITE], [mid - 1, mid, BLACK], [mid, mid - 1, BLACK], [mid, mid, WHITE]].forEach(([r, c, col], i) => schedule(0.15 + i * 0.18, () => spawnCat(col, r, c, 2.4)));
-  if (CFG.startFamily) [[1, 1], [1, 2], [1, 3], [1, 4], [2, 1], [3, 1], [4, 1], [4, 2], [2, 4], [4, 4]].forEach(([r, c], i) => schedule(0.9 + i * 0.12, () => spawnCat(S.cpu, r, c, 2.4))); // 大家族: 最初から相手だけ10匹多い
+  if (CFG.startFamily) (CFG.startFamily === 'scatter' ? scatterFamily(10) : Array.isArray(CFG.startFamily) ? CFG.startFamily : [[1, 1], [1, 2], [1, 3], [1, 4], [2, 1], [3, 1], [4, 1], [4, 2], [2, 4], [4, 4]]).forEach(([r, c], i) => schedule(0.9 + i * 0.12, () => spawnCat(S.cpu, r, c, 2.4))); // 大家族: 最初から相手だけ10匹多い
   if (CFG.startCorners) [[0, 0], [N - 1, N - 1], [0, N - 1], [N - 1, 0]].slice(0, CFG.startCorners === true ? 4 : CFG.startCorners).forEach(([r, c], i) => schedule(0.9 + i * 0.18, () => spawnCat(S.cpu, r, c, 2.4))); // ボス猫は最初から角を4つ持っている
   setReserve(innerHeight > innerWidth ? 150 : 84, innerHeight > innerWidth ? 175 : 96);
   hide('title'); hide('howto'); hide('pick'); hide('result'); hide('pauseMenu'); hide('sugo'); hide('vs'); hide('sugoPreview'); hide('award'); show('hud');
@@ -1813,7 +1836,7 @@ $('pauseTitle').onclick = () => { goTitle(); };
 $('pauseRetry').onclick = () => { startGame(); };
 const toMapOrAward = () => { if (S.awardPending) { S.awardPending = false; openAward(); } else openMap(); }; // 完走した直後は賞状を出す
 $('retryBtn').onclick = () => { Snd.sfx.ui(); if (S.opp != null && S.lastWin) toMapOrAward(); else startGame(); };
-$('toTitleBtn').onclick = () => { Snd.sfx.ui(); if (S.opp != null) toMapOrAward(); else goTitle(); };
+$('toTitleBtn').onclick = () => { Snd.sfx.ui(); if (S.awardPending) { S.awardPending = false; openAward(); } else goTitle(); }; // チャレンジでも「タイトルへ」（完走直後だけ先に賞状）
 $('sugoDone').onclick = () => { Snd.sfx.ui(); openAward(); };
 $('awardClose').onclick = () => { Snd.sfx.ui(); hide('award'); openMap(); };
 function syncSoundBtns() { const m = Snd.isMuted(); document.querySelectorAll('.soundBtn').forEach((b) => { b.textContent = m ? '🔇' : '🔊'; }); }
@@ -2025,9 +2048,9 @@ async function boot() {
   } catch (e) { $('loadMsg').textContent = '読み込みに失敗しました: ' + e.message; console.error(e); return; }
   syncSoundBtns();
   // 画面タップでスタート（音を鳴らせるようにする合図にもなる）
-  $('loadBar').parentNode.classList.add('hidden'); $('loadMsg').classList.add('hidden'); $('tapStart').classList.remove('hidden');
-  goTitle(); show('loading');
-  $('loading').addEventListener('pointerup', () => { Snd.init(); Snd.startBgm(); Snd.sfx.ui(); hide('loading'); }, { once: true });
+  // タイトル画面の上に半透明で「画面をタップしてスタート」を重ねる（タイトルの猫は見えたまま）
+  hide('loading'); goTitle(); show('tapLayer'); $('title').classList.add('tapWait'); // ボタンは隠して、ロゴと猫は見せる
+  $('tapLayer').addEventListener('pointerup', () => { Snd.init(); Snd.startBgm(); Snd.sfx.ui(); hide('tapLayer'); $('title').classList.remove('tapWait'); }, { once: true });
 }
 requestAnimationFrame(tick);
 boot();
