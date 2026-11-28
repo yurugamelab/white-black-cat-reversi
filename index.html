@@ -116,10 +116,18 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
 .mini i.w::after,.mini i.b::after,.mini i.fw::after,.mini i.fb::after{content:"";position:absolute;inset:7px;border-radius:50%;background:#fff;box-shadow:0 2px 0 rgba(0,0,0,.18)}
 .mini i.b::after,.mini i.fb::after{background:#4a4452}
 .mini i.tap{outline:3px dashed var(--pink-d);outline-offset:-3px}
+.mini i.w::after,.mini i.b::after{display:none}.mini i svg{position:absolute;inset:5px;width:34px;height:34px}
+.mini i.paw{background:#ffd3e1}.mini i.paw::before{content:"🐾";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:24px}
+.bigIc{font-size:64px;line-height:1.2}
+#howto .slides{height:min(46vh,330px)}#howto .mini{transform:scale(1.25);margin:14px 0}#howto .slide p{font-size:17px;line-height:1.7}
 .mini i.arrow::before{content:"→";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;color:var(--pink-d)}
 .mini i.toy::before{content:"🪶";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px}
 .dots{display:flex;gap:8px}.dots i{width:10px;height:10px;border-radius:50%;background:#e6cfd8}.dots i.on{background:var(--pink-d)}
 .howBtns{display:flex;gap:12px;align-items:center}
+#guide{position:fixed;z-index:14;pointer-events:none;transform:translate(-50%,0);display:flex;flex-direction:column;align-items:center}
+#guide .gHand{font-size:40px;animation:gBob .9s ease-in-out infinite;filter:drop-shadow(0 3px 4px rgba(0,0,0,.25))}
+#guide .gTxt{margin-top:2px;background:var(--pink-d);color:#fff;font-weight:900;font-size:14px;padding:5px 12px;border-radius:999px;box-shadow:0 3px 8px rgba(160,80,110,.3)}
+@keyframes gBob{50%{transform:translateY(-10px)}}
 @keyframes pop{from{transform:scale(.94);opacity:0}to{transform:none;opacity:1}}
 
 /* HUD */
@@ -220,7 +228,7 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
       <div class="l2">リバーシ</div>
     </div>
     <div class="titleBottom">
-      <button class="btn" id="btnStart"><span class="fc" id="faceW"></span><span>ひとりで遊ぶ</span><span class="fc" id="faceB"></span></button>
+      <button class="btn" id="btnStart"><span class="fc" id="tFaceW"></span><span>ひとりで遊ぶ</span><span class="fc" id="tFaceB"></span></button>
       <div class="tiles">
         <button class="tile locked" id="btnTwo"><span class="ic" id="icTwo"></span><span id="twoLabel">ふたりで</span><small id="twoSub">アプリ版のみ</small></button>
         <button class="tile locked" id="btnSugo"><span class="ic" id="icSugo"></span><span id="sugoLabel">チャレンジ</span><small id="sugoSub">アプリ版のみ</small></button>
@@ -243,25 +251,31 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
     <h2>あそびかた</h2>
     <div class="slides">
       <div class="slide">
-        <h3>① 置いて、はさむ</h3>
-        <div class="mini" style="grid-template-columns:repeat(4,44px)"><i class="b"></i><i class="w"></i><i class="tap"></i><i></i></div>
-        <p>マスを<b>タップ</b>すると置けるよ！<br>自分の猫で相手の猫をはさもう。<br>時間のバーが<b>白</b>なら白ねこの番、<b>黒</b>なら黒ねこの番。</p>
+        <h3>① 肉球をタップ</h3>
+        <div class="mini" style="grid-template-columns:repeat(4,44px)"><i class="w"></i><i class="b"></i><i class="paw tap"></i><i></i></div>
+        <p><b style="color:#f0789a">ピンクの肉球</b>をタップして置こう。<br>はさんだ猫が<b>自分の色</b>になるよ。</p>
       </div>
       <div class="slide">
-        <h3>② 猫は勝手に動く！</h3>
+        <h3>② 猫は勝手に歩く</h3>
         <div class="mini" style="grid-template-columns:repeat(4,44px)"><i class="w"></i><i class="b"></i><i class="w arrow"></i><i></i></div>
-        <p>猫は<b>気ままに歩き回る</b>よ。<br>歩いて並びが変わると、<b>置ける場所</b>も変わる！<br>ひっくり返るのは<b>置いたとき</b>だけ。<br><b style="color:#f0789a">ピンクの肉球</b>が置ける場所のヒント。<br>1手は<b>10秒</b>。時間切れはパスになるよ。</p>
+        <p>猫は<b>気ままに歩く</b>よ。<br>置ける場所も、どんどん変わる！</p>
       </div>
       <div class="slide">
-        <h3>③ 猫じゃらしで誘導</h3>
+        <h3>③ 長押しで猫じゃらし</h3>
         <div class="mini" style="grid-template-columns:repeat(4,44px)"><i class="w"></i><i></i><i class="toy"></i><i class="b"></i></div>
-        <p>空いているマスを<b>長押し</b>すると猫じゃらし！<br>近くの<b>相手の猫</b>が寄ってくるよ。<br>手番を使わず、<b>何回でも</b>使えるよ。<br>猫を長押しするとなでられるよ。</p>
+        <p>空いたマスを<b>長押し</b>すると、<br>近くの相手の猫が<b>寄ってくる</b>よ。</p>
+      </div>
+      <div class="slide">
+        <h3>④ 2本指でアップ</h3>
+        <div class="bigIc">🤏🐈</div>
+        <p>2本指で広げると、<br>猫を<b>アップ</b>で見られるよ。</p>
       </div>
     </div>
-    <div class="dots"><i></i><i></i><i></i></div>
+    <div class="dots"><i></i><i></i><i></i><i></i></div>
     <div class="howBtns"><button class="btn sm ghost" id="howSkip" style="width:auto">スキップ</button><button class="btn sm" id="howNext" style="width:auto;min-width:150px">つぎへ</button></div>
   </div>
 
+  <div id="guide" class="hidden"><div class="gHand">👆</div><div class="gTxt">ここをタップ！</div></div>
   <div id="hud" class="layer hidden">
     <div class="top">
       <div class="sb" id="sbW"><span class="face" id="faceW"></span><span id="scW">2</span><em class="you hidden" id="youW">あなた</em></div>
@@ -1348,6 +1362,7 @@ function updateCat(cat, dt) {
       break;
     }
     case 'idle': {
+      if (cat.targetYaw != null && Math.abs(angDiff(cat.targetYaw, cat.yaw)) > 0.01) cat.yaw += clamp(angDiff(cat.targetYaw, cat.yaw), -3.5 * dt, 3.5 * dt); // 振り向きはゆっくり
       if (S.time >= cat.nextAnim) { const was = cat.sleeping; chooseIdle(cat, was ? { stand: true } : {}); if (was) cat.nextWalk = S.time + rnd(0.8, 2); }
       if (S.moveEnabled && S.time >= cat.nextWalk && S.time >= cat.busyUntil) tryWalk(cat);
       break;
@@ -1508,6 +1523,7 @@ function place(color, r, c) {
   cat.restUntil = S.turnNo + 2;
   applyFlips(fl, r, c, 0.5, 'place');
   S.moveEnabled = true; // 最初の1手が置かれたら、猫たちが歩き出す
+  if (S.guide && color === S.me) { S.guide = false; store.set('seenGuide', true); }
   S.passes = 0; S.phase = 'gap'; S.gapT = 1.25; S.nextTurn = other(color); clearSel();
   return true;
 }
@@ -1578,6 +1594,10 @@ function showResult() {
     } else { S.sugoLoss[S.opp] = (S.sugoLoss[S.opp] || 0) + 1; $('retryBtn').textContent = 'もう一回にゃ'; }
   }
   const winner = win ? S.me : (draw ? 0 : S.cpu);
+  { // 結果: 勝った側の猫たちにゆっくり寄って、喜ぶ姿をアップで見せる
+    const ws = S.cats.filter((c) => c.mode !== 'hidden' && (draw || c.color === (S.two ? (S.counts[WHITE] > S.counts[BLACK] ? WHITE : BLACK) : winner)));
+    if (ws.length) { const cx = ws.reduce((a2, c) => a2 + c.x, 0) / ws.length, cz = ws.reduce((a2, c) => a2 + c.z, 0) / ws.length; S.camTarget = { zoom: 1.6, x: clamp(cx, -1.2, 1.2), z: clamp(cz, -1.2, 1.2) }; }
+  }
   for (const cat of S.cats) {
     if (cat.mode === 'hidden') continue;
     if (draw || cat.color === winner) { cat.mode = 'cheer'; cat.timer = rnd(0.1, 1.5); }
@@ -1624,6 +1644,7 @@ function startGame(opts = {}) {
   if (S.opp != null) mine = autoSkin(oppSkin); // すごろくは見分けやすい白か黒に自動で決まる
   S.collar = false;
   S.skin = { 1: mine, 2: oppSkin }; S.passes = 0; S.moveEnabled = false;
+  S.guide = !S.two && S.opp == null && !store.get('seenGuide', false); S.guideCell = null; // はじめての1局だけ置き場所を案内
   S.toyCool = { 1: 0, 2: 0 }; S.toyMode = false; S.sel = null; S.yaw = 0; S.pitch = 0; resetZoom(); applyStage(S.opp != null ? OPPONENTS[S.opp].stage : 'grass');
   S.paused = false; S.events = [];
   const mid = N / 2;
@@ -1770,7 +1791,7 @@ function panBy(dx, dy) {
   const k = 0.011 / S.zoom, cy = Math.cos(S.yaw), sy = Math.sin(S.yaw);
   S.focus.x = clamp(S.focus.x - (dx * cy + dy * sy) * k, -3, 3); S.focus.z = clamp(S.focus.z - (-dx * sy + dy * cy) * k, -3, 3);
 }
-function resetZoom() { S.zoom = 1; S.focus = { x: 0, z: 0 }; pinch = null; pts.clear(); }
+function resetZoom() { S.zoom = 1; S.focus = { x: 0, z: 0 }; S.camTarget = null; pinch = null; pts.clear(); }
 canvas.addEventListener('pointerdown', (e) => {
   pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (pts.size === 2 && (S.mode === 'play' || S.mode === 'title')) {
@@ -1856,14 +1877,14 @@ function choose(k) {
   if (S.pickFor === 'vs') { openVs(S.vsIdx); return; }
   if (!store.get('seenHowto', false)) { store.set('seenHowto', true); openHowto(true); } else startGame({ opp: null });
 }
-let howtoPage = 0, howtoThenPlay = false;
+let howtoPage = 0, howtoThenPlay = false; const HOW_LAST = 3;
 function openHowto(thenPlay) {
   howtoThenPlay = thenPlay; howtoPage = 0; hide('title'); show('howto'); S.mode = 'howto'; renderHowto();
 }
 function renderHowto() {
   document.querySelectorAll('#howto .slide').forEach((el, i) => el.classList.toggle('on', i === howtoPage));
   document.querySelectorAll('#howto .dots i').forEach((el, i) => el.classList.toggle('on', i === howtoPage));
-  $('howNext').textContent = howtoPage === 2 ? (howtoThenPlay ? 'あそぶ！' : 'とじる') : 'つぎへ';
+  $('howNext').textContent = howtoPage === HOW_LAST ? (howtoThenPlay ? 'あそぶ！' : 'とじる') : 'つぎへ';
 }
 $('btnStart').onclick = startFlow;
 $('btnTwo').onclick = () => { Snd.init(); Snd.sfx.ui(); if (!APP) { openPromo('two'); return; } startGame({ two: true, opp: null }); }; // Web版はアプリ版の紹介へ
@@ -1883,12 +1904,13 @@ $('vsBack').onclick = () => { Snd.sfx.ui(); openMap(); };
 $('vsChange').onclick = () => { Snd.sfx.ui(); S.pickFor = 'vs'; openPick(); };
 $('vsGo').onclick = () => { Snd.sfx.ui(); hide('vs'); startGame({ opp: S.vsIdx }); };
 $('pickBack').onclick = () => { Snd.sfx.ui(); if (S.pickFor === 'vs') { hide('pick'); openVs(S.vsIdx); } else goTitle(); };
-$('faceW').innerHTML = catFaceSVG('white'); $('faceB').innerHTML = catFaceSVG('black'); $('icTwo').innerHTML = catFaceSVG('white') + catFaceSVG('black'); $('icSugo').innerHTML = ['buchi', 'chatora', 'sabi'].map((k) => catFaceSVG(k)).join('');
+$('tFaceW').innerHTML = catFaceSVG('white'); $('tFaceB').innerHTML = catFaceSVG('black');
+document.querySelectorAll('#howto .mini i.w').forEach((e) => e.insertAdjacentHTML('beforeend', catFaceSVG('white'))); document.querySelectorAll('#howto .mini i.b').forEach((e) => e.insertAdjacentHTML('beforeend', catFaceSVG('black'))); $('icTwo').innerHTML = catFaceSVG('white') + catFaceSVG('black'); $('icSugo').innerHTML = ['buchi', 'chatora', 'sabi'].map((k) => catFaceSVG(k)).join('');
 if (APP) { $('btnTwo').classList.remove('locked'); $('btnSugo').classList.remove('locked'); hide('limited'); hide('resAppBtn'); }
 $('btnHow').onclick = () => { Snd.init(); Snd.sfx.ui(); openHowto(false); };
 $('howNext').onclick = () => {
   Snd.sfx.ui();
-  if (howtoPage < 2) { howtoPage++; renderHowto(); } else { if (howtoThenPlay) startGame({ opp: null }); else goTitle(); }
+  if (howtoPage < HOW_LAST) { howtoPage++; renderHowto(); } else { if (howtoThenPlay) startGame({ opp: null }); else goTitle(); }
 };
 $('howSkip').onclick = () => { Snd.sfx.ui(); if (howtoThenPlay) startGame({ opp: null }); else goTitle(); };
 $('pauseBtn').onclick = () => { Snd.init(); setPaused(true); };
@@ -1949,6 +1971,7 @@ function fitCamera() {
 const TITLE_ZOOM = 1.6; // タイトルの盤は動かさない（実際の大きさは fitTitleBoard で決める）
 function updateCamera(dt) {
   S.camIdle += dt;
+  if (S.camTarget && !pinch) { const k = 1 - Math.pow(0.35, dt), T = S.camTarget; S.zoom += (T.zoom - S.zoom) * k; S.focus.x += (T.x - S.focus.x) * k; S.focus.z += (T.z - S.focus.z) * k; }
   const z = S.zoom || 1, a = Math.min(1, (z - 1) / 0.8), tx = S.focus.x * a, tz = S.focus.z * a;
   camera.position.copy(camPos(S.camDist / z, S.yaw, BASE_EL + S.pitch)).add(new THREE.Vector3(tx, 0, tz)); camera.lookAt(tx, 0, tz);
 }
@@ -2015,6 +2038,16 @@ function simulate(dt) {
       }
     } else {
       if (S.cpuToyAt > 0 && S.time >= S.cpuToyAt) { S.cpuToyAt = -1; cpuToy(); }
+      // 相手の番のあいだ: ときどき猫がこちらを振り向いたり、ぐーっと伸びたりする
+      if (S.time >= (S.waitFx || 0)) {
+        S.waitFx = S.time + rnd(1.6, 2.8);
+        const idle = S.cats.filter((c) => c.mode === 'idle' && !c.sleeping && !c.flip && S.time >= c.busyUntil);
+        if (idle.length) {
+          const cat = pick(idle);
+          if (Math.random() < 0.6) { cat.targetYaw = Math.atan2(camera.position.x - cat.x, camera.position.z - cat.z); playAnim(cat, pick(['sit', 'sit2'])); cat.busyUntil = S.time + rnd(1.8, 3); cat.nextAnim = cat.busyUntil; cat.nextWalk = Math.max(cat.nextWalk, cat.busyUntil); }
+          else { playAnim(cat, 'jstart', { once: true, speed: 0.35, restart: true }); cat.busyUntil = S.time + 2.4; cat.nextAnim = cat.busyUntil; cat.nextWalk = Math.max(cat.nextWalk, cat.busyUntil); }
+        }
+      }
       if (S.rescueWait && S.timeLeft > 0) return;
       if (S.cpuPend) {
         const P = S.cpuPend; cpuRing.visible = true; cpuRing.position.x = cellX(P.c); cpuRing.position.z = cellZ(P.r);
@@ -2051,7 +2084,20 @@ function cpuToy() {
   cands.sort((a, b) => b.n - a.n); const p = cands[Math.floor(Math.random() * Math.min(3, cands.length))];
   useToy(S.cpu, p.r, p.c);
 }
+/* はじめての1局だけ: 置ける場所のひとつを指で「ここをタップ！」と指す（最初に置いたら消える） */
+const guideV = new THREE.Vector3();
+function updateGuide() {
+  const el = $('guide');
+  const on = S.guide && S.mode === 'play' && S.phase === 'turn' && S.turn === S.me && !S.paused && !S.toyMode;
+  if (!on) { el.classList.add('hidden'); return; }
+  const mv = validMoves(S.me); if (!mv.length) { el.classList.add('hidden'); return; }
+  if (!S.guideCell || !mv.some((m) => m.r === S.guideCell.r && m.c === S.guideCell.c)) S.guideCell = mv[Math.floor(mv.length / 2)];
+  guideV.set(cellX(S.guideCell.c), 0.1, cellZ(S.guideCell.r)).project(camera);
+  el.style.left = ((guideV.x + 1) / 2 * innerWidth) + 'px'; el.style.top = ((1 - guideV.y) / 2 * innerHeight) + 'px';
+  el.classList.remove('hidden');
+}
 function updateVisuals(dt) {
+  updateGuide();
   const t = S.time;
   // 置ける場所のしるし（あなたの番のみ）
   const showValid = S.mode === 'play' && S.phase === 'turn' && S.turn === S.me && !S.toyMode && !S.paused;
