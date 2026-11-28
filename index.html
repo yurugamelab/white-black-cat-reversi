@@ -190,6 +190,13 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
 .best{font-size:13.5px;font-weight:800;color:var(--ink-s);margin-bottom:10px}.best.new{color:var(--pink-d)}
 .resBtns{display:flex;flex-direction:column;gap:8px;align-items:center}
 .resBtns .btn{width:100%;max-width:380px;padding:12px 16px;font-size:18px}.resBtns .btn.sm{font-size:15.5px;padding:10px 14px}
+#appPromo{background:rgba(255,240,246,.93);display:flex;align-items:center;justify-content:center;padding:20px;z-index:22;pointer-events:auto}
+#appPromo.hidden{display:none}
+.prList{display:flex;flex-direction:column;gap:8px;margin:6px 0 10px;text-align:left}
+.pr{display:flex;align-items:center;gap:10px;background:#fff;border-radius:14px;padding:8px 12px;font-size:12.5px;line-height:1.45;color:var(--ink);box-shadow:0 3px 0 rgba(150,120,140,.12)}
+.pr b{font-size:14.5px;color:var(--pink-d)}.pr .ic{display:flex;font-size:24px;min-width:52px;justify-content:center}.pr .ic svg{width:26px;height:26px}
+.pr.hl{outline:3px solid var(--pink);background:#fff4f8}
+.limited{border:0;font-family:var(--font);cursor:pointer}
 #appBtn small{font-size:11px;opacity:.9;margin-left:6px}
 .xbtn{background:#222!important;box-shadow:0 5px 0 rgba(0,0,0,.25)!important}
 
@@ -214,14 +221,13 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
       <div class="sub">猫が勝手に歩く、ゆるいリバーシ！</div>
     </div>
     <div class="titleBottom">
-      <div id="titleBest"></div>
       <button class="btn" id="btnStart"><span class="fc" id="faceW"></span><span>ひとりで遊ぶ</span><span class="fc" id="faceB"></span></button>
       <div class="tiles">
-        <button class="tile locked" id="btnTwo"><span class="ic" id="icTwo"></span><span id="twoLabel">ふたりで</span><small id="twoSub">アプリ版</small></button>
-        <button class="tile locked" id="btnSugo"><span class="ic" id="icSugo"></span><span id="sugoLabel">チャレンジ</span><small id="sugoSub">アプリ版</small></button>
+        <button class="tile locked" id="btnTwo"><span class="ic" id="icTwo"></span><span id="twoLabel">ふたりで</span><small id="twoSub">アプリ版のみ</small></button>
+        <button class="tile locked" id="btnSugo"><span class="ic" id="icSugo"></span><span id="sugoLabel">チャレンジ</span><small id="sugoSub">アプリ版のみ</small></button>
         <button class="tile" id="btnHow"><span class="ic">🐾</span><span>あそびかた</span></button>
       </div>
-      <div class="limited" id="limited">🎁 <b>期間限定・無料公開中</b><br>アプリ版（300円）は近日公開予定</div>
+      <button class="limited" id="limited">🎁 <b>期間限定・無料公開中</b><br>アプリ版（300円）ならもっと遊べる ›</button>
       <div class="credit">ゆるゲー研究所</div>
     </div>
     <button class="round soundBtn corner">🔊</button>
@@ -277,12 +283,11 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
       </div>
       <div id="resUnlock" class="hidden"></div>
       <div id="resLine">にゃんとか勝った</div>
-      <div class="best" id="resBest"></div>
       <div class="resBtns">
         <button class="btn" id="retryBtn">もう一度遊ぶ</button>
+        <button class="btn mint sm" id="resAppBtn">📱 アプリ版ならライバル猫と対決！</button>
         <button class="btn xbtn" id="shareBtn">𝕏 で結果をシェア</button>
         <button class="btn ghost sm" id="toTitleBtn">タイトルへ</button>
-        <button class="btn mint sm" id="appBtn">📱 アプリ版をダウンロード</button>
         <button class="btn ghost sm" id="followBtn">ゆるゲー紹介屋さんをフォロー</button>
       </div>
     </div>
@@ -317,6 +322,21 @@ button{font-family:inherit;color:inherit;border:0;cursor:pointer}
       <button class="btn ghost sm" id="vsChange" style="width:auto;display:none">自分の猫をかえる</button>
       <button class="btn" id="vsGo">たたかう！</button>
       <button class="btn ghost sm" id="vsBack" style="width:auto">もどる</button>
+    </div>
+  </div>
+
+  <div id="appPromo" class="layer hidden">
+    <div class="vsCard">
+      <h2>アプリ版でできること</h2>
+      <div class="prList">
+        <div class="pr" data-k="two"><span class="ic" id="prTwo"></span><div><b>ふたりで遊ぶ</b><br>1台のスマホを交代で。友だちや家族と対決</div></div>
+        <div class="pr" data-k="sugo"><span class="ic" id="prSugo"></span><div><b>チャレンジモード</b><br>個性ゆたかな5匹のライバル猫と勝負</div></div>
+        <div class="pr" data-k="stage"><span class="ic">🏡</span><div><b>舞台と曲が変わる</b><br>縁側・屋根の上・夜の路地裏…</div></div>
+        <div class="pr" data-k="award"><span class="ic">📜</span><div><b>完走すると賞状</b><br>ぜんぶ勝ったらねこ協会から</div></div>
+      </div>
+      <div class="pvApp">300円・買い切り（近日公開）</div>
+      <button class="btn mint" id="appBtn">📱 アプリ版をダウンロード</button>
+      <button class="btn ghost sm" id="prClose" style="width:auto">とじる</button>
     </div>
   </div>
 
@@ -1549,8 +1569,6 @@ function showResult() {
   let best = store.get('best', 0), note = '';
   if (!S.two) { const plays = store.get('plays', 0) + 1, wins = store.get('wins', 0) + (win ? 1 : 0); store.set('plays', plays); store.set('wins', wins); }
   if (win && !S.two) { const diff = my - opp; if (diff > best) { best = diff; store.set('best', best); note = 'ハイスコア更新！'; } }
-  $('resBest').textContent = (note ? note + '　' : '') + (best > 0 ? `ベスト +${best}` : 'ベスト ー');
-  $('resBest').className = note ? 'best new' : 'best';
   S.share = { my, opp, win, draw, line, w: S.counts[WHITE], b: S.counts[BLACK] };
   // すごろく: 勝った相手を記録（マップで「かった！」）
   S.lastWin = win; $('resUnlock').classList.add('hidden');
@@ -1649,7 +1667,6 @@ function goTitle() {
   attractReset();
   setReserve(innerHeight > innerWidth ? 160 : 150, innerHeight > innerWidth ? 350 : 120);
   hide('hud'); hide('result'); hide('howto'); hide('pick'); hide('pauseMenu'); hide('sugo'); hide('vs'); hide('sugoPreview'); hide('award'); show('title');
-  $('titleBest').textContent = store.get('best', 0) > 0 ? `ベスト +${store.get('best', 0)}` : '';
   Snd.startBgm(); Snd.duck(false);
 }
 function setReserve(top, bottom) { S.reserveTo = { top, bottom }; }
@@ -1836,8 +1853,17 @@ function renderHowto() {
   $('howNext').textContent = howtoPage === 2 ? (howtoThenPlay ? 'あそぶ！' : 'とじる') : 'つぎへ';
 }
 $('btnStart').onclick = startFlow;
-$('btnTwo').onclick = () => { Snd.init(); if (!APP) { Snd.sfx.cancel(); return; } Snd.sfx.ui(); startGame({ two: true, opp: null }); }; // Web版はグレーで押せない
-$('btnSugo').onclick = () => { Snd.init(); Snd.sfx.ui(); if (APP) openMap(); else openSugoPreview(); };
+$('btnTwo').onclick = () => { Snd.init(); Snd.sfx.ui(); if (!APP) { openPromo('two'); return; } startGame({ two: true, opp: null }); }; // Web版はアプリ版の紹介へ
+$('btnSugo').onclick = () => { Snd.init(); Snd.sfx.ui(); if (APP) openMap(); else openPromo('sugo'); };
+/* Web版 → アプリ版への導線: タイトルの帯・ロックされたボタン・ひとりプレイの結果から、アプリ版の紹介を開く */
+function openPromo(k) {
+  $('prTwo').innerHTML = catFaceSVG('white') + catFaceSVG('black'); $('prSugo').innerHTML = ['buchi', 'chatora', 'sabi'].map((s) => catFaceSVG(s)).join('');
+  document.querySelectorAll('#appPromo .pr').forEach((e) => e.classList.toggle('hl', e.dataset.k === k));
+  show('appPromo');
+}
+$('prClose').onclick = () => { Snd.sfx.ui(); hide('appPromo'); };
+$('limited').onclick = () => { Snd.init(); Snd.sfx.ui(); openPromo(''); };
+$('resAppBtn').onclick = () => { Snd.sfx.ui(); openPromo('sugo'); };
 $('pvClose').onclick = () => { Snd.sfx.ui(); hide('sugoPreview'); };
 $('sugoBack').onclick = () => { Snd.sfx.ui(); goTitle(); };
 $('vsBack').onclick = () => { Snd.sfx.ui(); openMap(); };
@@ -1845,7 +1871,7 @@ $('vsChange').onclick = () => { Snd.sfx.ui(); S.pickFor = 'vs'; openPick(); };
 $('vsGo').onclick = () => { Snd.sfx.ui(); hide('vs'); startGame({ opp: S.vsIdx }); };
 $('pickBack').onclick = () => { Snd.sfx.ui(); if (S.pickFor === 'vs') { hide('pick'); openVs(S.vsIdx); } else goTitle(); };
 $('faceW').innerHTML = catFaceSVG('white'); $('faceB').innerHTML = catFaceSVG('black'); $('icTwo').innerHTML = catFaceSVG('white') + catFaceSVG('black'); $('icSugo').innerHTML = ['buchi', 'chatora', 'sabi'].map((k) => catFaceSVG(k)).join('');
-if (APP) { $('btnTwo').classList.remove('locked'); $('btnSugo').classList.remove('locked'); hide('limited'); hide('appBtn'); }
+if (APP) { $('btnTwo').classList.remove('locked'); $('btnSugo').classList.remove('locked'); hide('limited'); hide('resAppBtn'); }
 $('btnHow').onclick = () => { Snd.init(); Snd.sfx.ui(); openHowto(false); };
 $('howNext').onclick = () => {
   Snd.sfx.ui();
