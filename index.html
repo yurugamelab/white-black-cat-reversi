@@ -1116,9 +1116,24 @@ function startWalk(cat, d, alertTime) {
   playAnim(cat, 'crouch', { fade: 0.15 }); cat.sleeping = false;
 }
 const wander = (a, b) => rnd(a, b) * clamp(16 / Math.max(4, S.cats.length), 1, 2.6); // 猫が少ない序盤はのんびり
+// 見た目でマスの境目を越えたら、判定上もそのマスへ移す
+function crossInto(cat) {
+  const d = cat.dest; if (!d || (cat.r === d.r && cat.c === d.c)) return;
+  if (cell[cat.r][cat.c] === cat) cell[cat.r][cat.c] = null;
+  cat.prev = { r: cat.r, c: cat.c }; cat.r = d.r; cat.c = d.c; cell[d.r][d.c] = cat; resv[d.r][d.c] = null;
+  afterBoardChange();
+}
+// 行き先にコマが置かれたら、まだ境目を越えていない猫は元のマスへ戻る
+function turnBack(cat) {
+  if (!cat.dest) return;
+  resv[cat.dest.r][cat.dest.c] = null; cat.dest = { r: cat.r, c: cat.c }; cat.lure = null;
+  cat.targetYaw = Math.atan2(cellX(cat.c) - cat.x, cellZ(cat.r) - cat.z);
+  if (cat.mode !== 'walk') { cat.mode = 'idle'; cat.dest = null; chooseIdle(cat); cat.nextWalk = S.time + rnd(1, 2); }
+}
 function arrive(cat) {
   const d = cat.dest;
   cat.rescue = false;
+  if (cat.r === d.r && cat.c === d.c) { cat.x = cellX(d.c); cat.z = cellZ(d.r); cat.dest = null; cat.mode = 'idle'; chooseIdle(cat, { noSleep: Math.random() < 0.5 }); cat.nextWalk = S.time + wander(1.0, 3.0) * (S.mode === 'play' && cat.color === S.cpu ? CFG.oppWalkMul : 1); if (cat.lure) { cat.lure.steps--; cat.nextWalk = S.time + rnd(0.1, 0.4); } afterBoardChange(); return; }
   cell[cat.r][cat.c] = null; cat.prev = { r: cat.r, c: cat.c }; cat.r = d.r; cat.c = d.c; cell[d.r][d.c] = cat; resv[d.r][d.c] = null; cat.dest = null;
   cat.x = cellX(d.c); cat.z = cellZ(d.r);
   cat.mode = 'idle'; chooseIdle(cat, { noSleep: Math.random() < 0.5 }); cat.nextWalk = S.time + wander(1.0, 3.0) * (S.mode === 'play' && cat.color === S.cpu ? CFG.oppWalkMul : 1);
@@ -1158,7 +1173,11 @@ function updateCat(cat, dt) {
     case 'walk': {
       cat.yaw += clamp(angDiff(cat.targetYaw, cat.yaw), -9 * dt, 9 * dt);
       const tx = cellX(cat.dest.c), tz = cellZ(cat.dest.r), dx = tx - cat.x, dz = tz - cat.z, dist = Math.hypot(dx, dz), step = cat.speed * dt;
-      if (dist <= step) { arrive(cat); } else { cat.x += dx / dist * step; cat.z += dz / dist * step; }
+      if (dist <= step) { arrive(cat); } else {
+        cat.x += dx / dist * step; cat.z += dz / dist * step;
+        const fx = cellX(cat.c), fz = cellZ(cat.r);
+        if ((cat.r !== cat.dest.r || cat.c !== cat.dest.c) && Math.hypot(cat.x - tx, cat.z - tz) < Math.hypot(cat.x - fx, cat.z - fz)) crossInto(cat);
+      }
       break;
     }
     case 'poke': {
@@ -1247,7 +1266,7 @@ function validMoves(color) {
   const out = [];
   counts();
   for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
-    if (cell[r][c] || resv[r][c]) continue;
+    if (cell[r][c]) continue; // 向かってくる途中の猫（まだマスに入っていない）は空きとして扱う
     const fl = scanFlips(colorAt, r, c, color); if (fl.length && !spareRule(color, fl)) out.push({ r, c, flips: fl });
   }
   return out;
@@ -1284,7 +1303,8 @@ function doPass(color) {
 }
 function place(color, r, c) {
   const fl = scanFlips(colorAt, r, c, color);
-  if (cell[r][c] || (resv[r][c] && resv[r][c] !== 'sel') || !fl.length || spareRule(color, fl)) return false;
+  if (cell[r][c] || !fl.length || spareRule(color, fl)) return false;
+  if (resv[r][c] && resv[r][c] !== 'sel') turnBack(resv[r][c]);
   resv[r][c] = null;
   const cat = spawnCat(color, r, c, 2.2);
   if (!cat) return false;
@@ -1423,7 +1443,7 @@ function onTapCell(r, c) {
   if (S.mode !== 'play' || S.phase !== 'turn' || S.turn !== S.me || S.paused) return;
   if (S.toyMode) { if (useToy(S.me, r, c)) { S.toyMode = false; updateToyUI(); } return; }
   // タップ1回で置く（2回タップの間に猫が動くストレスをなくす）
-  if (!cell[r][c] && !resv[r][c] && place(S.me, r, c)) return;
+  if (!cell[r][c] && place(S.me, r, c)) return;
   Snd.sfx.cancel();
 }
 function updatePreview() {
